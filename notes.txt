@@ -1,0 +1,21 @@
+Route
+http://localhost:3000/api/users/register
+
+Body
+{
+    "first_name": "Muhammad",
+    "last_name": "Arsalan",
+    "email": "muhammad.arsalan@devteam.com",
+    "password": "mySecurePassword123",
+    "role_id": 2
+}
+
+Response
+{
+    "message": "User registered successfully.",
+    "user": {
+        "user_id": "a1b2c3d4-...",
+        "first_name": "Muhammad",
+        "email": "muhammad.arsalan@devteam.com"
+    }
+}
