@@ -15,41 +15,158 @@ The React Compiler is not enabled on this template because of its impact on dev 
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
---
+---
 
-Application Development
+# Application Development
 
---
+---
 
-### User Endpoints (api/users)
-Method,Path,Description
-POST,/api/users/register,Create a new user (requires hashing the password).
-POST,/api/users/login,Read/Authenticate a user (returns a JWT token).
-GET,/api/users/me,Read the currently authenticated user's profile.
-GET,/api/users/:id,Read a specific user's details (Admin/PM only).
-PUT,/api/users/:id,"Update a user's details (e.g., name, role, status)."
-DELETE,/api/users/:id,Delete/Deactivate a user (Admin only).
+### Application Endpoints
 
-### Project Endpoints (api/projects)
-Method,Path,Description
-POST,/api/projects,Create a new project.
-GET,/api/projects,Read all projects (with optional filtering by status/manager).
-GET,/api/projects/:id,Read details for a specific project.
-PUT,/api/projects/:id,"Update project details (name, description, status)."
-DELETE,/api/projects/:id,Delete a project.
+```
+{
+    // =========================
+    // Auth Routes
+    // =========================
+    // POST /api/auth/register
+    "register": {
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@yourdomain.com",
+        "password": "yourSecurePassword",
+        "role_id": 3 // 1=Admin, 2=Project Manager, 3=Developer
+    },
+    // POST /api/auth/login
+    "login": {
+        "email": "john.doe@yourdomain.com",
+        "password": "yourSecurePassword"
+    },
+    // =========================
+    // User Routes (Admin Only)
+    // =========================
+    // PUT /api/users/update/:id
+    "updateUser": {
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "email": "jane.smith@yourdomain.com",
+        "role_id": 2,
+        "is_active": true
+    },
+    // =========================
+    // Project Routes
+    // =========================
+    // POST /api/projects/create
+    "createProject": {
+        "name": "Project Alpha",
+        "description": "First project for the team",
+        "manager_id": "3010e4c8-3f50-428d-a821-2c735967e440", // Project Manager's user_id
+        "status": "Planning",
+        "start_date": "2025-11-01",
+        "due_date": "2025-12-01"
+    },
+    // PUT /api/projects/update/:id
+    "updateProject": {
+        "name": "Project Alpha Updated",
+        "description": "Updated project description",
+        "manager_id": "3010e4c8-3f50-428d-a821-2c735967e440",
+        "status": "Active",
+        "start_date": "2025-11-05",
+        "due_date": "2026-01-15"
+    },
+    // =========================
+    // Task Routes
+    // =========================
+    // POST /api/tasks/create
+    "createTask": {
+        "project_id": "PROJECT-UUID-HERE",
+        "title": "Setup Project Repository",
+        "description": "Initialize the repository and setup basic structure.",
+        "assigned_to_id": "8c91acef-63da-411b-b77e-6236231fd1e3", // Developer's user_id
+        "priority": "High",
+        "status": "To Do",
+        "due_date": "2025-11-10"
+    },
+    // PUT /api/tasks/update/:id
+    "updateTask": {
+        "title": "Setup Project Repo - Updated",
+        "description": "Updated task description.",
+        "assigned_to_id": "8c91acef-63da-411b-b77e-6236231fd1e3",
+        "priority": "Medium",
+        "status": "In Progress",
+        "due_date": "2025-11-15"
+    },
+    // =========================
+    // Time Entry Routes
+    // =========================
+    // POST /api/time/create
+    "createTimeEntry": {
+        "task_id": "TASK-UUID-HERE",
+        "start_time": "2025-11-01T09:00:00+05:00",
+        "end_time": "2025-11-01T12:00:00+05:00",
+        "notes": "Worked on initial setup."
+        // user_id is taken from the logged-in user, not needed in body
+    },
+    // PUT /api/time/update/:id
+    "updateTimeEntry": {
+        "task_id": "TASK-UUID-HERE",
+        "start_time": "2025-11-01T10:00:00+05:00",
+        "end_time": "2025-11-01T13:00:00+05:00",
+        "notes": "Updated work log."
+    }
+}
+```
+---
 
-### Task Endpoints (api/task)
-Method,Path,Description
-POST,/api/tasks,Create a new task.
-GET,/api/tasks,Read tasks (Crucial: allow filtering by project_id and assigned_to_id).
-GET,/api/tasks/:id,Read details for a specific task.
-PUT,/api/tasks/:id,"Update task details (title, status, priority, assignee)."
-DELETE,/api/tasks/:id,Delete a task.
+## Adding New Fields to Database Tables: Logic & Flow
 
-### Time Entrt Endpoints ()
-Method,Path,Description
-POST,/api/time,Create a new time entry (log start and end time).
-GET,/api/time,Read all time entries (Crucial: allow filtering by user_id and date range).
-GET,/api/time/:id,Read a specific time entry.
-PUT,/api/time/:id,Update a time entry (correcting notes or end time).
-DELETE,/api/time/:id,Delete a time entry.
+#### When you add new fields (columns) to your database tables, here’s what will be affected and how you can populate those fields:
+
+This section explains how to safely add new fields (columns) to your database tables and update your application to support them, without losing or corrupting existing data.
+
+---
+
+## 1. Database Changes
+
+- Use SQL `ALTER TABLE` to add new columns.
+- Example:
+  ```sql
+  ALTER TABLE users ADD COLUMN phone_number VARCHAR(20);
+  ALTER TABLE projects ADD COLUMN budget DECIMAL(12,2);
+  ```
+- Make new columns `NULLABLE` or set a default value to avoid issues with existing rows.
+
+---
+
+## 2. Backend Updates
+
+- **Controller Files:**  
+  Update controller logic to handle new fields in request bodies, SQL queries (INSERT, UPDATE, SELECT), and API responses.
+- **Route Files:**  
+  Usually unchanged unless you add new endpoints, but ensure routes accept new data if needed.
+
+---
+
+## 3. Frontend Updates
+
+- **React Components & Forms:**  
+  Update forms and API calls to include new fields.
+  Update state and rendering logic to show new data.
+
+---
+
+## 4. Populating New Fields
+
+- **During Creation:**  
+  Add the new field to frontend forms and send it in the request body.  
+  Update controller’s INSERT queries to include the new field.
+- **During Update:**  
+  Add the new field to update forms.  
+  Update controller’s UPDATE queries to allow changing the new field.
+- **For Existing Data:**  
+  Use SQL to set a default value for existing rows:
+  ```sql
+  UPDATE table_name SET new_field = 'default_value' WHERE new_field IS NULL;
+  ```
+  Or, allow the field to be `NULL` and update it later via your app’s update functionality.
+
+---

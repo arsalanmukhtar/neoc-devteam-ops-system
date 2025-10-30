@@ -12,15 +12,15 @@ import {
 const router = express.Router();
 
 // Create Time Entry (Authenticated)
-router.post("/", authMiddleware, createTimeEntry);
+router.post("/create", authMiddleware, createTimeEntry);
 
 // Get All Time Entries (Authenticated, user's own)
-router.get("/", authMiddleware, getAllTimeEntries);
+router.get("/list", authMiddleware, getAllTimeEntries);
 
 // Update Time Entry (Authenticated, user's own)
-router.put("/:id", authMiddleware, updateTimeEntry);
+router.put("/update/:id", authMiddleware, updateTimeEntry);
 
 // Delete Time Entry (Authenticated, user's own)
-router.delete("/:id", authMiddleware, deleteTimeEntry);
+router.delete("/delete/:id", authMiddleware, deleteTimeEntry);
 
 export default router;

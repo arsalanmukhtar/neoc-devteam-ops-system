@@ -62,7 +62,7 @@ app.get('/api/status', authMiddleware, (req, res) => { // <-- MODIFIED
 });
 
 // 2. Use the authentication routes with a specific prefix
-app.use('/api/users', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // 3. Use the project routes
 app.use('/api/projects', projectRoutes);

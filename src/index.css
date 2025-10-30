@@ -6,3 +6,110 @@ body {
   font-family: 'Josefin Sans', sans-serif;
 }
 
+/* --- 1. CORE COLOR SCHEME (CSS Variables) --- */
+:root {
+  /* Duotone Base */
+  --color-white: #ffffff;
+  --color-black: #1a1a1a;
+  /* Used for dark text/elements */
+
+  /* Accent Color (Choose a bold color, e.g., a rich teal or blue) */
+  --color-accent: #008cba;
+  --color-accent-light: #52b2d9;
+  /* Lighter shade for hover/background */
+  --color-accent-dark: #006080;
+  /* Darker shade for focus/active */
+
+  /* Grayscale/Structure */
+  --color-light-gray: #f5f5f5;
+  /* For section backgrounds */
+  --color-medium-gray: #ccc;
+  /* For borders and separators */
+  --color-dark-gray: #666;
+  /* For secondary text */
+
+  /* --- 2. STATUS & DANGER COLORS --- */
+  --color-status-success: #4caf50;
+  /* Green */
+  --color-status-warning: #ffc107;
+  /* Yellow/Orange for warnings/underuse */
+  --color-status-danger: #f44336;
+  /* Red for errors/dangers/overuse */
+  --color-status-info: #2196f3;
+  /* Blue for general info/neutral status */
+
+  /* --- 3. TYPOGRAPHY & SPACING --- */
+  --font-family-base: 'Josefin Sans';
+  --font-size-base: 16px;
+
+  /* Spacing system (based on 8px grid) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+}
+
+/* --- 4. GLOBAL STYLES (Consistency) --- */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-base);
+  color: var(--color-black);
+  background-color: var(--color-white);
+}
+
+/* --- 5. BASE ELEMENT STYLING --- */
+
+/* Buttons */
+.btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--space-xs);
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+/* Primary Button (Accent Duotone) */
+.btn-primary {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-accent-dark);
+}
+
+.btn-primary:focus {
+  outline: 2px solid var(--color-accent-light);
+  outline-offset: 2px;
+}
+
+/* Secondary Button (White Duotone) */
+.btn-secondary {
+  background-color: var(--color-white);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-light-gray);
+  color: var(--color-accent-dark);
+}
+
+/* Input Forms */
+.input-field {
+  width: 100%;
+  padding: var(--space-sm);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--color-medium-gray);
+  border-radius: var(--space-xs);
+  box-sizing: border-box;
+  /* Crucial for padding/border not affecting total width */
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}

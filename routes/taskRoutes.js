@@ -16,18 +16,18 @@ const router = express.Router();
 // --- NOTE: The isAdminOrPM function definition is NO LONGER here. ---
 
 // Create Task (Admin or PM Only)
-router.post("/", authMiddleware, isAdminOrPM, createTask);
+router.post("/create", authMiddleware, isAdminOrPM, createTask);
 
 // Get All Tasks (Authenticated)
-router.get("/", authMiddleware, getAllTasks);
+router.get("/list", authMiddleware, getAllTasks);
 
 // Get Single Task (Authenticated)
-router.get("/:id", authMiddleware, getTaskById);
+router.get("/view/:id", authMiddleware, getTaskById);
 
 // Update Task (Admin or PM Only)
-router.put("/:id", authMiddleware, isAdminOrPM, updateTask);
+router.put("/update/:id", authMiddleware, isAdminOrPM, updateTask);
 
 // Delete Task (Admin or PM Only)
-router.delete("/:id", authMiddleware, isAdminOrPM, deleteTask);
+router.delete("/delete/:id", authMiddleware, isAdminOrPM, deleteTask);
 
 export default router;

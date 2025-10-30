@@ -13,16 +13,16 @@ const router = express.Router();
 
 // All routes here are restricted to Administrators (role_id 1)
 
-// GET /api/users/management - Get all users
-router.get('/management', authMiddleware, checkRole(ADMIN_ROLE_ID), getAllUsers);
+// GET /api/users/all - Get all users
+router.get('/all', authMiddleware, checkRole(ADMIN_ROLE_ID), getAllUsers);
 
-// GET /api/users/management/:id - Get a single user
-router.get('/management/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), getUserById);
+// GET /api/users/single/:id - Get a single user
+router.get('/single/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), getUserById);
 
-// PUT /api/users/management/:id - Update user details (role, status, name)
-router.put('/management/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), updateUser);
+// PUT /api/users/update/:id - Update user details (role, status, name)
+router.put('/update/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), updateUser);
 
-// DELETE /api/users/management/:id - Deactivate user (Soft Delete)
-router.delete('/management/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), deactivateUser);
+// DELETE /api/users/:id - Deactivate user (Soft Delete)
+router.delete('/delete/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), deactivateUser);
 
 export default router;

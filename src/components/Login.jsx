@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 // NOTE: Ensure your backend is running on port 3000
-const API_URL = 'http://localhost:3000/api/users'; 
+const API_URL = 'http://localhost:3000/api/auth'; 
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');

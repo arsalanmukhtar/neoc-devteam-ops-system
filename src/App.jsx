@@ -1,5 +1,4 @@
 // File: src/App.jsx
-import "./App.css";
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import ProjectList from './components/ProjectList'; // <-- NEW IMPORT
