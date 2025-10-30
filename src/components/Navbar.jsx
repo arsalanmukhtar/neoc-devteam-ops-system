@@ -6,7 +6,7 @@ const Navbar = ({ isAuthenticated, onLogout }) => (
         <img
             src={ndmaLogo}
             alt="NDMA Logo"
-            className="h-12 w-12 rounded-full"
+            className="h-12 w-12 rounded-full logo-spin"
         />
         <h1 className="flex-1 text-center text-white font-semibold text-xl">
             NEOC Internal Ops - Tech (EW)

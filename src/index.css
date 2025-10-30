@@ -51,7 +51,22 @@ body {
   background-color: var(--color-white);
 }
 
-/* --- 5. BASE ELEMENT STYLING --- */
+/* --- 5. Animation styles --- */
+.logo-spin {
+  animation: logo-spin 3s linear infinite;
+}
+
+@keyframes logo-spin {
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+/* --- 6. BASE ELEMENT STYLING --- */
 
 /* Buttons */
 .btn {
@@ -108,7 +123,7 @@ body {
 }
 
 .input-filled {
-  background-color: #ecf0f1;
+  background-color: #ffffff;
   /* Tailwind's blue-50 */
   transition: background-color 0.2s;
 }

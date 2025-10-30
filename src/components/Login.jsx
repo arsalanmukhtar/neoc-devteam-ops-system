@@ -36,8 +36,8 @@ const Login = ({ onLogin }) => {
 
   return (
     <>
-      <div className="max-w-md mx-auto mt-16 p-8 bg-stone-100 rounded-lg shadow">
-        <h2 className="text-green-600 text-center text-2xl font-semibold mb-6">Internal Ops Login</h2>
+      <div className="max-w-md mx-auto mt-32 p-8 rounded-xl">
+        <h2 className="text-green-600 text-center text-3xl font-semibold mb-6">Internal Ops Login</h2>
         {error && (
           <p className="text-red-700 bg-red-100 p-2 mb-4 border border-red-400 rounded">
             {error}
@@ -70,7 +70,7 @@ const Login = ({ onLogin }) => {
           </div>
           <button
             type="submit"
-            className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition"
+            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-green-800 transition"
             disabled={loading}
           >
             {loading ? 'Logging In...' : 'Login'}
