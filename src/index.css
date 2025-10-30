@@ -13,13 +13,6 @@ body {
   --color-black: #1a1a1a;
   /* Used for dark text/elements */
 
-  /* Accent Color (Choose a bold color, e.g., a rich teal or blue) */
-  --color-accent: #008cba;
-  --color-accent-light: #52b2d9;
-  /* Lighter shade for hover/background */
-  --color-accent-dark: #006080;
-  /* Darker shade for focus/active */
-
   /* Grayscale/Structure */
   --color-light-gray: #f5f5f5;
   /* For section backgrounds */
@@ -112,4 +105,10 @@ body {
 .input-field:focus {
   border-color: var(--color-accent);
   outline: none;
+}
+
+.input-filled {
+  background-color: #ecf0f1;
+  /* Tailwind's blue-50 */
+  transition: background-color 0.2s;
 }

@@ -1,10 +1,6 @@
-// File: src/components/Login.jsx
-
 import React, { useState } from 'react';
-import axios from 'axios';
 
-// NOTE: Ensure your backend is running on port 3000
-const API_URL = 'http://localhost:3000/api/auth'; 
+const API_URL = 'http://localhost:3000/api/auth';
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -18,72 +14,70 @@ const Login = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/login`, { email, password });
-      
-      // Store the JWT token and user ID (or other relevant data)
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user_id', response.data.user_id);
-      
-      // Call the parent handler to update application state
-      onLogin(true); 
-
-    } catch (err) {
-      console.error('Login error:', err);
-      // Display specific error from the backend or a general message
-      setError(err.response?.data?.error || 'Login failed. Check your network and credentials.');
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user_id', data.user_id);
+        onLogin(true);
+      } else {
+        setError(data.error || 'Login failed. Check your credentials.');
+      }
+    } catch {
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container" style={{ 
-        maxWidth: '400px', 
-        margin: '50px auto', 
-        padding: 'var(--space-lg)',
-        backgroundColor: 'var(--color-light-gray)',
-        borderRadius: 'var(--space-sm)'
-    }}>
-      <h2 style={{ color: 'var(--color-accent)', textAlign: 'center' }}>Internal Ops Login</h2>
-      
-      {error && <p style={{ 
-          color: 'var(--color-status-danger)', 
-          backgroundColor: '#fdd', 
-          padding: 'var(--space-sm)',
-          border: '1px solid var(--color-status-danger)'
-      }}>{error}</p>}
-
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="email" style={{ color: 'var(--color-dark-gray)', fontSize: 'small' }}>Email</label>
-        <input
-          type="email"
-          id="email"
-          className="input-field"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        
-        <label htmlFor="password" style={{ color: 'var(--color-dark-gray)', fontSize: 'small' }}>Password</label>
-        <input
-          type="password"
-          id="password"
-          className="input-field"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', marginTop: 'var(--space-md)' }}>
-          {loading ? 'Logging In...' : 'Login'}
-        </button>
-
-        {/* Example Secondary Button */}
-        <button type="button" className="btn btn-secondary" style={{ width: '100%', marginTop: 'var(--space-sm)' }}>
-          Register (Placeholder)
-        </button>
-      </form>
-    </div>
+    <>
+      <div className="max-w-md mx-auto mt-16 p-8 bg-stone-100 rounded-lg shadow">
+        <h2 className="text-green-600 text-center text-2xl font-semibold mb-6">Internal Ops Login</h2>
+        {error && (
+          <p className="text-red-700 bg-red-100 p-2 mb-4 border border-red-400 rounded">
+            {error}
+          </p>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-gray-700 text-sm mb-1">Email</label>
+            <input
+              type="email"
+              id="email"
+              className={`w-full px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-green-200 ${email ? 'input-filled' : ''}`}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="username"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-gray-700 text-sm mb-1">Password</label>
+            <input
+              type="password"
+              id="password"
+              className={`w-full px-3 py-2 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-green-200 ${password ? 'input-filled' : ''}`}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition"
+            disabled={loading}
+          >
+            {loading ? 'Logging In...' : 'Login'}
+          </button>
+        </form>
+      </div>
+    </>
   );
 };
 

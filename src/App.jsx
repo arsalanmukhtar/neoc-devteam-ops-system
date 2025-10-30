@@ -1,44 +1,7 @@
-// File: src/App.jsx
 import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
-import ProjectList from './components/ProjectList'; // <-- NEW IMPORT
-
-// Placeholder for your main application dashboard
-const Dashboard = () => {
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user_id');
-        window.location.reload(); // Simple way to reset state
-    };
-
-    return (
-        <>
-            <div style={{ 
-                padding: 'var(--space-md)', 
-                textAlign: 'right', 
-                backgroundColor: 'var(--color-light-gray)',
-                borderBottom: '1px solid var(--color-medium-gray)'
-            }}>
-                <button 
-                    className="btn" 
-                    onClick={handleLogout} 
-                    style={{ 
-                        backgroundColor: 'var(--color-status-danger)', 
-                        color: 'white', 
-                        border: 'none',
-                        fontWeight: 'normal',
-                        padding: 'var(--space-xs) var(--space-sm)'
-                    }}
-                >
-                    Logout
-                </button>
-            </div>
-            
-            {/* Render the Project List below the header */}
-            <ProjectList /> 
-        </>
-    );
-};
+import Dashboard from './components/Dashboard';
+import Navbar from './components/Navbar';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,8 +13,15 @@ function App() {
     }
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user_id');
+    setIsAuthenticated(false);
+  };
+
   return (
     <>
+      <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
       {isAuthenticated ? (
         <Dashboard />
       ) : (
