@@ -12,7 +12,6 @@ import taskRoutes from "./routes/taskRoutes.js";
 import timeRoutes from "./routes/timeRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 
-
 const { Pool } = pkg;
 
 // The rest of your code remains largely the same
