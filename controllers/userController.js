@@ -1,5 +1,5 @@
 // File: controllers/userController.js
-
+import bcrypt from "bcrypt";
 import { pool } from "../server.js";
 // Note: We're not importing bcrypt/jwt here because registration/login are in authController.js
 
@@ -47,36 +47,35 @@ export const getUserById = async (req, res) => {
 // --- Update User Logic (Admin Only - for role, status, name) ---
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  // Allow updating name, role_id, and is_active status
-  const { first_name, last_name, role_id, is_active } = req.body;
+  const { first_name, last_name, email, role_id, is_active, password } = req.body;
 
-  // Basic validation
-  if (!first_name || !last_name || !role_id || is_active === undefined) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "All fields (first_name, last_name, role_id, is_active) are required for user update.",
-      });
+  // Build update fields
+  const fields = [];
+  const values = [];
+  let idx = 1;
+
+  if (first_name) { fields.push(`first_name = $${idx++}`); values.push(first_name); }
+  if (last_name) { fields.push(`last_name = $${idx++}`); values.push(last_name); }
+  if (email) { fields.push(`email = $${idx++}`); values.push(email); }
+  if (role_id) { fields.push(`role_id = $${idx++}`); values.push(role_id); }
+  if (is_active !== undefined) { fields.push(`is_active = $${idx++}`); values.push(is_active); }
+  if (password) {
+    const hash = await bcrypt.hash(password, 10);
+    fields.push(`password_hash = $${idx++}`);
+    values.push(hash);
   }
 
+  if (fields.length === 0) return res.status(400).json({ error: 'No fields to update.' });
+
+  values.push(id);
+
+  const query = `UPDATE users SET ${fields.join(', ')} WHERE user_id = $${idx} RETURNING *`;
+
   try {
-    const result = await pool.query(
-      `UPDATE users 
-             SET first_name = $1, last_name = $2, role_id = $3, is_active = $4
-             WHERE user_id = $5
-             RETURNING user_id, email, is_active, role_id`,
-      [first_name, last_name, role_id, is_active, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "User not found for update." });
-    }
-
-    res.json({ message: "User updated successfully.", user: result.rows[0] });
-  } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ error: "Server error while updating the user." });
+    const result = await pool.query(query, values);
+    res.json({ message: 'User updated.', user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: 'Update failed.' });
   }
 };
 

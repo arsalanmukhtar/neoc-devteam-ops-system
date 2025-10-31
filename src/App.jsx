@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import Navbar from './components/Navbar';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(1); // Default to Administrator
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-    }
+    if (token) setIsAuthenticated(true);
   }, []);
 
   const handleLogout = () => {
@@ -20,14 +19,19 @@ function App() {
   };
 
   return (
-    <>
-      <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Navbar
+        selectedRole={selectedRole}
+        setSelectedRole={setSelectedRole}
+        isAuthenticated={isAuthenticated}
+        onLogout={handleLogout}
+      />
       {isAuthenticated ? (
         <Dashboard />
       ) : (
-        <Login onLogin={setIsAuthenticated} />
+        <Login onLogin={setIsAuthenticated} selectedRole={selectedRole} />
       )}
-    </>
+    </div>
   );
 }
 
