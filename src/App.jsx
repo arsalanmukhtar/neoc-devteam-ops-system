@@ -27,7 +27,7 @@ function App() {
         onLogout={handleLogout}
       />
       {isAuthenticated ? (
-        <Dashboard />
+        <Dashboard roleId={selectedRole} />
       ) : (
         <Login onLogin={setIsAuthenticated} selectedRole={selectedRole} />
       )}

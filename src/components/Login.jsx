@@ -67,7 +67,7 @@ const Login = ({ onLogin, selectedRole }) => {
       <div className="login-container max-w-md mx-auto mt-32 p-8 rounded-xl">
         <h2 className="text-green-600 text-center text-4xl font-semibold mb-16">Internal Ops Login</h2>
         {error && (
-          <p className="text-red-700 bg-red-100 p-2 mb-6 border border-red-200 rounded-lg">
+          <p className="text-red-500 bg-transparent p-2 mb-6 text-center rounded-full">
             {error}
           </p>
         )}
