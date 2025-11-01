@@ -17,7 +17,7 @@ const router = express.Router();
 router.get('/all', authMiddleware, checkRole(ADMIN_ROLE_ID), getAllUsers);
 
 // GET /api/users/single/:id - Get a single user
-router.get('/single/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), getUserById);
+router.get('/view/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), getUserById);
 
 // PUT /api/users/update/:id - Update user details (role, status, name)
 router.put('/update/:id', authMiddleware, checkRole(ADMIN_ROLE_ID), updateUser);

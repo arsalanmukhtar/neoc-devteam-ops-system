@@ -8,7 +8,7 @@ export const getAllUsers = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-                u.user_id, u.first_name, u.last_name, u.email, u.is_active, r.role_name
+                u.user_id, u.first_name, u.last_name, u.email, u.is_active, u.role_id, r.role_name
              FROM users u
              JOIN roles r ON u.role_id = r.role_id
              ORDER BY u.last_name`

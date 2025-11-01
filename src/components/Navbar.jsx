@@ -8,7 +8,7 @@ const roles = [
 ];
 
 const Navbar = ({ selectedRole, setSelectedRole, isAuthenticated, onLogout }) => (
-    <nav className="sticky top-0 z-20 w-full flex items-center justify-between bg-[#FBFCFA] px-6 py-3 shadow">
+    <nav className="sticky top-0 z-20 w-full flex items-center justify-between bg-[#FBFCFA] px-6 h-20 shadow">
         <img src={ndmaLogo} alt="NDMA Logo" className="h-12 w-12 rounded-full" />
         <h1 className="navtitle flex-1 text-center text-stone-800 font-semibold">
             NEOC Internal Ops - Tech (EW)

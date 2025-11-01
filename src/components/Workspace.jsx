@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { projectTabs, taskTabs, timeTabs, userTabs } from '../constants/tabs';
 import { getDefaultTopTab, getAllowedTabs } from '../constants/workspaceHelpers';
 
-import { handleUserTabAction } from '../utils/userApiLogger';
-import { handleProjectTabAction } from '../utils/projectApiLogger';
-import { handleTaskTabAction } from '../utils/taskApiLogger';
-import { handleTimeTabAction } from '../utils/timeApiLogger';
+import UserRegisterForm from './users/UserRegisterForm';
+import UserListTable from './users/UserListTable';
+import UserDetailsView from './users/UserDetailsView';
+import UserDelete from './users/UserDelete';
 
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
@@ -17,14 +17,13 @@ const Workspace = ({ activeTab, roleId }) => {
 
     const topTabs =
         activeTab === 'projects' ? projectTabs :
-        activeTab === 'tasks' ? taskTabs :
-        activeTab === 'users' ? userTabs :
-        activeTab === 'time' ? timeTabs :
-        [];
+            activeTab === 'tasks' ? taskTabs :
+                activeTab === 'users' ? userTabs :
+                    activeTab === 'time' ? timeTabs :
+                        [];
 
     const allowedTabs = getAllowedTabs(roleId);
 
-    // If the current activeTab is not allowed, show nothing or a message
     if (!allowedTabs.includes(activeTab)) {
         return (
             <div className="flex-1 bg-gray-50 min-h-0 h-full p-8 overflow-y-auto flex items-center justify-center">
@@ -33,19 +32,27 @@ const Workspace = ({ activeTab, roleId }) => {
         );
     }
 
-    // Helper to get the logger function for each tab
-    const getLoggerForTab = () => {
-        if (activeTab === "users") return handleUserTabAction;
-        if (activeTab === "projects") return handleProjectTabAction;
-        if (activeTab === "tasks") return handleTaskTabAction;
-        if (activeTab === "time") return handleTimeTabAction;
-        return null;
+    // Get API endpoint for the current top tab
+    const apiEndpoint = topTabs.find(t => t.value === activeTopTab)?.api;
+
+    // Render user tab content dynamically
+    const renderUserTabContent = () => {
+        switch (activeTopTab) {
+            case 'register':
+                return <UserRegisterForm api={apiEndpoint} />;
+            case 'list':
+                return <UserListTable api={apiEndpoint} />;
+            case 'view':
+                return <UserDetailsView api={apiEndpoint} />;
+            case 'delete':
+                return <UserDelete api={apiEndpoint} />;
+            default:
+                return <div className="text-gray-500">Tab content will go here.</div>;
+        }
     };
 
-    const loggerFn = getLoggerForTab();
-
     return (
-        <div className="flex-1 bg-gray-50 min-h-0 h-full p-8 overflow-y-auto">
+        <div className="flex-1 bg-gray-50 min-h-0 h-full p-8 overflow-y-auto sidebar-scroll">
             <div className="flex gap-2 mb-8">
                 {topTabs.map(tab => (
                     <button
@@ -58,22 +65,12 @@ const Workspace = ({ activeTab, roleId }) => {
                     </button>
                 ))}
             </div>
-            {/* Content for the selected top tab goes here */}
-            <div className="p-6 bg-white rounded-lg shadow">
+            <div className="p-6 bg-white rounded-lg shadow m-4 flex flex-col justify-start">
                 <h3 className="text-xl font-semibold mb-4">
                     {topTabs.find(t => t.value === activeTopTab)?.label}
                 </h3>
-                {/* Log button for each tab type */}
-                {loggerFn && (
-                    <button
-                        className="mb-4 px-4 py-2 rounded bg-blue-500 text-white"
-                        onClick={() => loggerFn(activeTopTab)}
-                    >
-                        Log {topTabs.find(t => t.value === activeTopTab)?.label} Request
-                    </button>
-                )}
-                {/* Placeholder for tab content */}
-                <div className="text-gray-500">Tab content will go here.</div>
+                {activeTab === "users" && renderUserTabContent()}
+                <div className="text-gray-500 mt-8">Tab content will go here.</div>
             </div>
         </div>
     );
