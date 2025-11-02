@@ -127,6 +127,41 @@ body {
 }
 
 /* =================================================== */
+/* Tiptap Global STYLES */
+/* =================================================== */
+.tiptap:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tiptap {
+  min-height: 150px;
+}
+/* Add to your main CSS file or inside a <style> tag */
+.tiptap ul {
+  list-style-type: disc;
+  margin-left: 1.5em;
+  padding-left: 0;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+  margin-left: 1.5em;
+  padding-left: 0;
+}
+
+.tiptap blockquote {
+  border-left: 4px solid #e0e7ef;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 1em;
+  color: #555;
+  font-style: italic;
+  background: #f8fafc;
+}
+
+/* =================================================== */
 /* INPUT STYLES */
 /* =================================================== */
 .input-field {

@@ -79,14 +79,19 @@ const UserListTable = ({ api }) => {
             withColumnBorders: true,
             style: { background: '#f8fafc', borderRadius: '8px' },
         },
+        mantineTableBodyRowProps: ({ row }) => ({
+            style: {
+                background: row.original.is_active === false ? '#fecaca' : '#f8fafc', // red-100 if inactive
+            },
+        }),
         mantineTableBodyCellProps: {
-            sx: { background: '#f8fafc' },
+            sx: { background: 'inherit' },
         },
         mantineTableHeadCellProps: {
             sx: {
                 background: '#e0e7ef',
                 display: 'flex',
-                justifyContent: 'space-between', // This keeps header left, icons right
+                justifyContent: 'space-between',
                 alignItems: 'center',
             },
         },

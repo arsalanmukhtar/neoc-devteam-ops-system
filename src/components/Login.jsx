@@ -21,37 +21,10 @@ const Login = ({ onLogin, selectedRole }) => {
       });
       const data = await response.json();
       if (response.ok) {
-        // Admin can log in as any role
-        if (data.role_id === 1) {
-          // Always allow
-        }
-        // Project Manager can log in as Project Manager or Team Member
-        else if (data.role_id === 2) {
-          if (selectedRole === 1) {
-            setError('Project Manager cannot log in as Administrator.');
-            setLoading(false);
-            return;
-          }
-        }
-        // Team Member can log in only as Team Member
-        else if (data.role_id === 3) {
-          if (selectedRole !== 3) {
-            setError('Team Member can only log in as Team Member.');
-            setLoading(false);
-            return;
-          }
-        }
-        // If role_id is not recognized
-        else {
-          setError('Invalid role.');
-          setLoading(false);
-          return;
-        }
-
         localStorage.setItem('token', data.token);
         localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('role_id', data.role_id);
         onLogin(true);
-        
       } else {
         setError(data.error || 'Login failed. Check your credentials.');
       }
@@ -65,7 +38,7 @@ const Login = ({ onLogin, selectedRole }) => {
   return (
     <>
       <div className="login-container max-w-md mx-auto mt-32 p-8 rounded-xl">
-        <h2 className="text-green-600 text-center text-4xl font-semibold mb-16">Internal Ops Login</h2>
+        <h2 className="text-green-600 text-center text-2xl font-semibold mb-12">Account Login</h2>
         {error && (
           <p className="text-red-500 bg-transparent p-2 mb-6 text-center rounded-full">
             {error}

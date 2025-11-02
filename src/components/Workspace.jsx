@@ -9,6 +9,11 @@ import UserDetailsView from './users/UserDetailsView';
 import UserDetailsUpdate from './users/UserDetailsUpdate';
 import UserDelete from './users/UserDelete';
 
+import ProjectCreateForm from './projects/ProjectCreateForm';
+import ProjectListTable from './projects/ProjectListTable';
+import ProjectDetailsUpdate from './projects/ProjectDetailsUpdate';
+// import ProjectDelete from './projects/ProjectDelete';
+
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
 
@@ -54,26 +59,58 @@ const Workspace = ({ activeTab, roleId }) => {
         }
     };
 
+    const renderProjectTabContent = () => {
+        switch (activeTopTab) {
+            case 'create':
+                return <ProjectCreateForm api={apiEndpoint} />;
+            case 'list':
+                return <ProjectListTable api={apiEndpoint} />;
+            case 'update':
+                return <ProjectDetailsUpdate api={apiEndpoint} />;
+            case 'delete':
+                return <ProjectDelete api={apiEndpoint} />;
+            default:
+                return <div className="text-gray-500">Tab content will go here.</div>;
+        }
+    };
+
     return (
-        <div className="flex-1 bg-gray-50 min-h-0 h-full p-8 overflow-y-auto sidebar-scroll">
-            <div className="flex gap-2 mb-8">
-                {topTabs.map(tab => (
-                    <button
-                        key={tab.value}
-                        className={`px-3 py-1 rounded-full font-medium transition
-              ${activeTopTab === tab.value ? 'border bg-blue-400 text-white shadow' : 'bg-white text-stone-700 border border-gray-300 hover:bg-stone-300'}`}
-                        onClick={() => setActiveTopTab(tab.value)}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
+        <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
+            {/* Top Tabs - sticky at top */}
+            <div className="sticky top-0 z-10 bg-white px-2 pt-4">
+                <div className="sticky top-0 z-10 bg-white px-2 pt-4">
+                    <div className="flex gap-0 border-b border-gray-300">
+                        {topTabs.map((tab, idx) => (
+                            <button
+                                key={tab.value}
+                                className={`relative px-7 py-2 font-semibold transition-all duration-150
+                    bg-white
+                    border border-t-4
+                    ${activeTopTab === tab.value
+                                        ? 'text-stone-700 border-gray-300 border-t-4 border-t-orange-400 bg-white z-10'
+                                        : 'text-gray-400 border-transparent hover:text-red-400'
+                                    }
+                `}
+                                style={{
+                                    borderBottom: 'none',
+                                }}
+                                onClick={() => setActiveTopTab(tab.value)}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             </div>
-            <div className="p-6 bg-white rounded-lg shadow m-4 flex flex-col justify-start">
-                <h3 className="text-xl font-semibold mb-4">
-                    {topTabs.find(t => t.value === activeTopTab)?.label}
-                </h3>
-                {activeTab === "users" && renderUserTabContent()}
-                <div className="text-gray-500 mt-8">Tab content will go here.</div>
+            {/* Scrollable Workspace Content */}
+            <div className="flex-1 overflow-y-auto sidebar-scroll p-0">
+                <div className="p-6 bg-white shadow flex flex-col justify-start w-full border-gray-300">
+                    <h3 className="text-xl font-semibold mb-4">
+                        {topTabs.find(t => t.value === activeTopTab)?.label}
+                    </h3>
+                    {activeTab === "users" && renderUserTabContent()}
+                    {activeTab === "projects" && renderProjectTabContent()}
+                </div>
             </div>
         </div>
     );

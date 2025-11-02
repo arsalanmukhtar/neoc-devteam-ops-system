@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Select } from '@mantine/core';
 
 const baseURL = 'http://localhost:3000';
@@ -14,6 +14,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const handleChange = e => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -40,6 +41,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                     role_id: '',
                     is_active: ''
                 });
+                setSuccess('User registered successfully!');
             } else {
                 setError(data.error || 'Registration failed');
             }
@@ -49,27 +51,37 @@ const UserRegisterForm = ({ api, onRegistered }) => {
         setLoading(false);
     };
 
+    useEffect(() => {
+        if (success || error) {
+            const timer = setTimeout(() => {
+                setSuccess('');
+                setError('');
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [success, error]);
+
     return (
         <form className="w-full max-w-2xl mx-auto flex flex-col gap-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="first_name" className="font-medium text-xs text-blue-400">First Name</label>
-                    <input type="text" id="first_name" name="first_name" className="border border-gray-300 rounded-full px-4 py-2" required value={form.first_name} onChange={handleChange} />
+                    <label htmlFor="first_name" className="label-style">First Name</label>
+                    <input type="text" id="first_name" name="first_name" className="input-border" required value={form.first_name} onChange={handleChange} />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="last_name" className="font-medium text-xs text-blue-400">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" className="border border-gray-300 rounded-full px-4 py-2" required value={form.last_name} onChange={handleChange} />
+                    <label htmlFor="last_name" className="label-style">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" className="input-border" required value={form.last_name} onChange={handleChange} />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="email" className="font-medium text-xs text-blue-400">Email</label>
-                    <input type="email" id="email" name="email" className="border border-gray-300 rounded-full px-4 py-2" required value={form.email} onChange={handleChange} />
+                    <label htmlFor="email" className="label-style">Email</label>
+                    <input type="email" id="email" name="email" className="input-border" required value={form.email} onChange={handleChange} />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="password" className="font-medium text-xs text-blue-400">Password</label>
-                    <input type="password" id="password" name="password" className="border border-gray-300 rounded-full px-4 py-2" required value={form.password} onChange={handleChange} />
+                    <label htmlFor="password" className="label-style">Password</label>
+                    <input type="password" id="password" name="password" className="input-border" required value={form.password} onChange={handleChange} />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="role_id" className="font-medium text-xs text-blue-400">Role</label>
+                    <label htmlFor="role_id" className="label-style">Role</label>
                     <Select
                         id="role_id"
                         name="role_id"
@@ -83,16 +95,16 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                         size="md"
                         value={form.role_id}
                         onChange={value => setForm({ ...form, role_id: value })}
-                        styles={{
-                            input: { background: '#FBFCFA', borderColor: '#f87171', color: '#44403c' },
-                            dropdown: { background: '#FBFCFA' },
-                            item: { color: '#44403c' },
+                        classNames={{
+                            input: 'input-border font-sans',
+                            dropdown: 'font-sans',
+                            item: 'font-sans'
                         }}
                         required
                     />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="is_active" className="font-medium text-xs text-blue-400">Active</label>
+                    <label htmlFor="is_active" className="label-style">Active</label>
                     <Select
                         id="is_active"
                         name="is_active"
@@ -105,16 +117,17 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                         size="md"
                         value={form.is_active}
                         onChange={value => setForm({ ...form, is_active: value })}
-                        styles={{
-                            input: { background: '#FBFCFA', borderColor: '#f87171', color: '#44403c' },
-                            dropdown: { background: '#FBFCFA' },
-                            item: { color: '#44403c' },
+                        classNames={{
+                            input: 'input-border font-sans',
+                            dropdown: 'font-sans',
+                            item: 'font-sans'
                         }}
                         required
                     />
                 </div>
             </div>
             {error && <div className="text-red-500">{error}</div>}
+            {success && <div className="text-green-600">{success}</div>}
             <div className="flex justify-end">
                 <button type="submit" className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition" disabled={loading}>
                     {loading ? "Registering..." : "Register User"}

@@ -14,7 +14,7 @@ const Navbar = ({ selectedRole, setSelectedRole, isAuthenticated, onLogout }) =>
             NEOC Internal Ops - Tech (EW)
         </h1>
         <div className="flex gap-2 items-center">
-            {!isAuthenticated && roles.map(role => (
+            {/* {!isAuthenticated && roles.map(role => (
                 <button
                     key={role.value}
                     className={`px-4 py-2 border border-stone-300 rounded-full font-light text-sm transition ${selectedRole === role.value ? 'bg-red-400 text-white' : 'bg-white opacity-80 text-stone-700'}`}
@@ -22,7 +22,7 @@ const Navbar = ({ selectedRole, setSelectedRole, isAuthenticated, onLogout }) =>
                 >
                     {role.label}
                 </button>
-            ))}
+            ))} */}
             {isAuthenticated && (
                 <button
                     className="bg-red-400 text-white font-normal px-4 py-2 rounded-full hover:bg-red-500 transition"

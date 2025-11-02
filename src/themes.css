@@ -1,0 +1,11 @@
+.label-style {
+    @apply font-medium text-xs text-stone-400;
+}
+
+.table-header-style {
+    @apply font-semibold text-xs text-stone-600;
+}
+
+.input-border {
+    @apply border border-gray-300 rounded-full px-4 py-2 focus:border-stone-500 focus:border focus:outline-none
+}

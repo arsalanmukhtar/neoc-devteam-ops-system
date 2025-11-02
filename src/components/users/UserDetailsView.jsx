@@ -54,10 +54,13 @@ const UserDetailsView = ({ api }) => {
                     size="md"
                     value={selectedId}
                     onChange={value => setSelectedId(value)}
+                    classNames={{
+                        input: 'input-border font-sans',
+                        dropdown: 'font-sans',
+                        item: 'font-sans'
+                    }}
                     styles={{
-                        input: { background: '#FBFCFA', borderColor: '#f87171', color: '#44403c', width: '100%' },
-                        dropdown: { background: '#FBFCFA' },
-                        item: { color: '#44403c' },
+                        input: { width: '100%' },
                     }}
                     required
                 />
@@ -80,23 +83,23 @@ const UserDetailsView = ({ api }) => {
                     >
                         <tbody>
                             <tr>
-                                <td className="font-semibold text-xs text-blue-400"><strong>First Name</strong></td>
+                                <td className="table-header-style"><strong>First Name</strong></td>
                                 <td className="text-stone-600">{details.first_name}</td>
                             </tr>
                             <tr>
-                                <td className="font-semibold text-xs text-blue-400"><strong>Last Name</strong></td>
+                                <td className="table-header-style"><strong>Last Name</strong></td>
                                 <td className="text-stone-600">{details.last_name}</td>
                             </tr>
                             <tr>
-                                <td className="font-semibold text-xs text-blue-400"><strong>Email</strong></td>
+                                <td className="table-header-style"><strong>Email</strong></td>
                                 <td className="text-stone-600">{details.email}</td>
                             </tr>
                             <tr>
-                                <td className="font-semibold text-xs text-blue-400"><strong>Role</strong></td>
+                                <td className="table-header-style"><strong>Role</strong></td>
                                 <td className="text-stone-600">{details.role_id}</td>
                             </tr>
                             <tr>
-                                <td className="font-semibold text-xs text-blue-400"><strong>Active</strong></td>
+                                <td className="table-header-style"><strong>Active</strong></td>
                                 <td className={details.is_active ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'}>
                                     {details.is_active ? "Active" : "Inactive"}
                                 </td>

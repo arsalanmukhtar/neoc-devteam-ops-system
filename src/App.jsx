@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom'; // <-- Add this import
 import Navbar from './components/Navbar';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -19,19 +20,21 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
-      <Navbar
-        selectedRole={selectedRole}
-        setSelectedRole={setSelectedRole}
-        isAuthenticated={isAuthenticated}
-        onLogout={handleLogout}
-      />
-      {isAuthenticated ? (
-        <Dashboard roleId={selectedRole} />
-      ) : (
-        <Login onLogin={setIsAuthenticated} selectedRole={selectedRole} />
-      )}
-    </div>
+    <BrowserRouter>
+      <div className="flex flex-col h-screen overflow-hidden">
+        <Navbar
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+          isAuthenticated={isAuthenticated}
+          onLogout={handleLogout}
+        />
+        {isAuthenticated ? (
+          <Dashboard roleId={selectedRole} />
+        ) : (
+          <Login onLogin={setIsAuthenticated} selectedRole={selectedRole} />
+        )}
+      </div>
+    </BrowserRouter>
   );
 }
 

@@ -9,7 +9,6 @@ export const userTabs = [
 export const projectTabs = [
     { label: 'Create a Project', value: 'create', api: '/api/projects/create' },
     { label: 'List All Projects', value: 'list', api: '/api/projects/list' },
-    { label: 'View Project Details', value: 'view', api: '/api/projects/view' }, // append /:id in component
     { label: 'Update Project Details', value: 'update', api: '/api/projects/update' }, // append /:id in component
     { label: 'Delete Project', value: 'delete', api: '/api/projects/delete' }, // append /:id in component
 ];
