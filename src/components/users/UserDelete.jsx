@@ -1,59 +1,210 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Select, Modal, Button, Table} from '@mantine/core';
 
 const baseURL = 'http://localhost:3000';
 
 const UserDelete = ({ api }) => {
     const [users, setUsers] = useState([]);
     const [selectedId, setSelectedId] = useState('');
-    const [message, setMessage] = useState('');
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [modalOpened, setModalOpened] = useState(false);
 
     useEffect(() => {
-        fetch('/api/users/list')
+        const token = localStorage.getItem('token');
+        fetch(baseURL + '/api/users/all', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
             .then(res => res.json())
-            .then(data => setUsers(data));
+            .then(data => setUsers(Array.isArray(data) ? data : []));
     }, []);
 
-    const handleDelete = async () => {
-        if (!selectedId) return;
-        if (!window.confirm('Are you sure you want to delete this user?')) return;
-        const res = await fetch(`${baseURL}${api}/${selectedId}`, { method: 'DELETE' });
-        if (res.ok) {
-            setMessage('User deleted successfully.');
-            setUsers(users.filter(u => u.user_id !== selectedId));
-            setSelectedId('');
+    useEffect(() => {
+        if (selectedId) {
+            const token = localStorage.getItem('token');
+            fetch(`${baseURL}/api/users/view/${selectedId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => setDetails(data));
         } else {
-            setMessage('Failed to delete user.');
+            setDetails(null);
         }
+    }, [selectedId]);
+
+    const handleDelete = async () => {
+        setLoading(true);
+        setError('');
+        setSuccess('');
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`${baseURL}${api}/${selectedId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (res.ok) {
+                setSuccess('User deleted successfully!');
+                setSelectedId('');
+                setDetails(null);
+                const updatedUsers = users.filter(u => u.user_id !== selectedId);
+                setUsers(updatedUsers);
+            } else {
+                const data = await res.json();
+                setError(data.error || 'Delete failed');
+            }
+        } catch {
+            setError('Network error');
+        }
+        setLoading(false);
+        setModalOpened(false);
+    };
+
+    const handleCancel = () => {
+        setSelectedId('');
+        setDetails(null);
+        setError('');
+        setSuccess('');
     };
 
     return (
-        <div className="max-w-lg mx-auto">
-            <div className="mb-4">
-                <label htmlFor="userDeleteSelect" className="block font-medium text-stone-700 mb-2">Select User to Delete</label>
-                <select
-                    id="userDeleteSelect"
-                    className="border border-gray-300 rounded-full px-4 py-2 w-full"
+        <div className="w-full flex flex-col items-center font-sans">
+            <div className="mb-4 w-full max-w-2xl">
+                <label htmlFor="userSelect" className="block font-medium text-stone-700 mb-2 text-center">
+                    Select User
+                </label>
+                <Select
+                    id="userSelect"
+                    name="userSelect"
+                    placeholder="Choose a user"
+                    data={
+                        users.map(user => ({
+                            value: user.user_id,
+                            label: `${user.first_name} ${user.last_name}`
+                        }))
+                    }
+                    radius="xl"
+                    size="md"
                     value={selectedId}
-                    onChange={e => setSelectedId(e.target.value)}
-                >
-                    <option value="">Choose a user</option>
-                    {users.map(user => (
-                        <option key={user.user_id} value={user.user_id}>
-                            {user.first_name} {user.last_name} ({user.email})
-                        </option>
-                    ))}
-                </select>
+                    onChange={value => setSelectedId(value)}
+                    styles={{
+                        input: { background: '#FBFCFA', borderColor: '#f87171', color: '#44403c', width: '100%' },
+                        dropdown: { background: '#FBFCFA' },
+                        item: { color: '#44403c' },
+                    }}
+                    required
+                />
             </div>
-            <div className="flex justify-end">
-                <button
-                    className="bg-red-500 text-white px-6 py-2 rounded-full hover:bg-red-600 transition"
-                    onClick={handleDelete}
-                    disabled={!selectedId}
-                >
-                    Delete User
-                </button>
-            </div>
-            {message && <div className="mt-4 text-green-600">{message}</div>}
+            {details && (
+                <div className="w-full max-w-2xl">
+                    <Table
+                        striped
+                        highlightOnHover
+                        withColumnBorders
+                        style={{
+                            marginTop: '2rem',
+                            width: '100%',
+                            background: '#FBFCFA',
+                            borderRadius: '1rem',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                            border: '1px solid #e2e8f0',
+                            textAlign: 'left'
+                        }}
+                    >
+                        <tbody>
+                            <tr>
+                                <td className="font-semibold text-xs text-blue-400"><strong>First Name</strong></td>
+                                <td className="text-stone-600">{details.first_name}</td>
+                            </tr>
+                            <tr>
+                                <td className="font-semibold text-xs text-blue-400"><strong>Last Name</strong></td>
+                                <td className="text-stone-600">{details.last_name}</td>
+                            </tr>
+                            <tr>
+                                <td className="font-semibold text-xs text-blue-400"><strong>Email</strong></td>
+                                <td className="text-stone-600">{details.email}</td>
+                            </tr>
+                            <tr>
+                                <td className="font-semibold text-xs text-blue-400"><strong>Role</strong></td>
+                                <td className="text-stone-600">{details.role_id}</td>
+                            </tr>
+                            <tr>
+                                <td className="font-semibold text-xs text-blue-400"><strong>Active</strong></td>
+                                <td className={details.is_active ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'}>
+                                    {details.is_active ? "Active" : "Inactive"}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                    <div className="flex justify-end gap-4 mt-8">
+                        <Button
+                            color="red"
+                            radius="xl"
+                            size="md"
+                            className="bg-red-500 hover:bg-red-600 text-white font-semibold px-8 py-2 rounded-full transition"
+                            onClick={() => setModalOpened(true)}
+                            disabled={loading}
+                        >
+                            Delete User
+                        </Button>
+                        <Button
+                            variant="outline"
+                            radius="xl"
+                            size="md"
+                            className="border border-gray-300 text-stone-700 font-semibold px-8 py-2 rounded-full transition"
+                            onClick={handleCancel}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                    <Modal
+                        opened={modalOpened}
+                        onClose={() => setModalOpened(false)}
+                        centered
+                        title="Confirm Delete"
+                    >
+                        <div className="text-red-500 font-semibold mb-4">
+                            Are you sure you want to delete this user? <br />
+                            <span className="font-normal text-stone-700">This action can't be undone.</span>
+                        </div>
+                        <div className="flex justify-end gap-4">
+                            <Button
+                                variant="outline"
+                                radius="xl"
+                                size="md"
+                                className="border border-gray-300 text-stone-700 font-semibold px-8 py-2 rounded-full transition"
+                                onClick={() => setModalOpened(false)}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                color="red"
+                                radius="xl"
+                                size="md"
+                                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-8 py-2 rounded-full transition"
+                                onClick={handleDelete}
+                                disabled={loading}
+                            >
+                                {loading ? "Deleting..." : "Delete"}
+                            </Button>
+                        </div>
+                    </Modal>
+                    {error && <div className="text-red-500 mt-4">{error}</div>}
+                    {success && <div className="text-green-600 mt-4">{success}</div>}
+                </div>
+            )}
         </div>
     );
 };
