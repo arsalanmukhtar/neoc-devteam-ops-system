@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import NotificationAlert from './NotificationAlert';
 
 const API_URL = 'http://localhost:3000/api/auth';
 
@@ -39,10 +40,13 @@ const Login = ({ onLogin, selectedRole }) => {
     <>
       <div className="login-container max-w-md mx-auto mt-32 p-8 rounded-xl">
         <h2 className="text-green-600 text-center text-2xl font-semibold mb-12">Account Login</h2>
+        {/* MESSAGES */}
         {error && (
-          <p className="text-red-500 bg-transparent p-2 mb-6 text-center rounded-full">
-            {error}
-          </p>
+          <NotificationAlert
+            type="error"
+            message={error}
+            onClose={() => setError("")}
+          />
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">

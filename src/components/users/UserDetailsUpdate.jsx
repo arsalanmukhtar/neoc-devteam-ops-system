@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Select } from '@mantine/core';
+import NotificationAlert from "../NotificationAlert";
 
 const baseURL = 'http://localhost:3000';
 
@@ -236,8 +237,21 @@ const UserDetailsUpdate = ({ api }) => {
                             />
                         </div>
                     </div>
-                    {error && <div className="text-red-500">{error}</div>}
-                    {success && <div className="text-green-600">{success}</div>}
+                    {/* MESSAGES */}
+                    {error && (
+                        <NotificationAlert
+                            type="error"
+                            message={error}
+                            onClose={() => setError("")}
+                        />
+                    )}
+                    {success && (
+                        <NotificationAlert
+                            type="success"
+                            message={success}
+                            onClose={() => setSuccess("")}
+                        />
+                    )}
                     <div className="flex justify-end">
                         <button
                             type="submit"

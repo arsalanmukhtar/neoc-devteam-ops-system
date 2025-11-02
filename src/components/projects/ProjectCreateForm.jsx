@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import NotificationAlert from "../NotificationAlert";
+
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
 
@@ -382,8 +384,20 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
             </div>
 
             {/* MESSAGES */}
-            {error && <div className="text-red-500">{error}</div>}
-            {success && <div className="text-green-600">{success}</div>}
+            {error && (
+                <NotificationAlert
+                    type="error"
+                    message={error}
+                    onClose={() => setError("")}
+                />
+            )}
+            {success && (
+                <NotificationAlert
+                    type="success"
+                    message={success}
+                    onClose={() => setSuccess("")}
+                />
+            )}
 
             {/* SUBMIT */}
             <div className="flex justify-end">
