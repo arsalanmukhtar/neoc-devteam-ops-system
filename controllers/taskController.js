@@ -51,7 +51,7 @@ export const getAllTasks = async (req, res) => {
   const { project_id, assigned_to_id } = req.query;
   let query = `
         SELECT 
-            t.task_id, t.title, t.priority, t.status, t.due_date,
+            t.task_id, t.title, t.description, t.priority, t.status, t.due_date, t.created_at,
             p.name AS project_name,
             u.first_name AS assigned_first_name, 
             u.last_name AS assigned_last_name
@@ -108,38 +108,38 @@ export const getTaskById = async (req, res) => {
 // --- Update Task Logic ---
 export const updateTask = async (req, res) => {
   const { id } = req.params;
-  const {
-    project_id,
-    title,
-    description,
-    assigned_to_id,
-    priority,
-    status,
-    due_date,
-  } = req.body;
+  const allowedFields = [
+    "project_id",
+    "title",
+    "description",
+    "assigned_to_id",
+    "priority",
+    "status",
+    "due_date",
+  ];
+  const updates = [];
+  const params = [];
 
-  if (!title || !assigned_to_id) {
-    return res
-      .status(400)
-      .json({ error: "Task title and assigned ID are required for update." });
+  allowedFields.forEach((field, idx) => {
+    if (req.body[field] !== undefined) {
+      updates.push(`${field} = $${params.length + 1}`);
+      params.push(req.body[field]);
+    }
+  });
+
+  if (updates.length === 0) {
+    return res.status(400).json({ error: "No valid fields provided for update." });
   }
+
+  params.push(id);
 
   try {
     const result = await pool.query(
       `UPDATE tasks 
-             SET project_id = $1, title = $2, description = $3, assigned_to_id = $4, priority = $5, status = $6, due_date = $7
-             WHERE task_id = $8
-             RETURNING task_id, title, status`,
-      [
-        project_id,
-        title,
-        description,
-        assigned_to_id,
-        priority,
-        status,
-        due_date,
-        id,
-      ]
+         SET ${updates.join(", ")}
+         WHERE task_id = $${params.length}
+         RETURNING task_id, title, status, priority`,
+      params
     );
 
     if (result.rows.length === 0) {

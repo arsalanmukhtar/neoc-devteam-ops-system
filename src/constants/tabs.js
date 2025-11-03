@@ -16,9 +16,6 @@ export const projectTabs = [
 export const taskTabs = [
     { label: 'Create a Task', value: 'create', api: '/api/tasks/create' },
     { label: 'List all Tasks', value: 'list', api: '/api/tasks/list' },
-    { label: 'View Task Details', value: 'view', api: '/api/tasks/view' }, // append /:id in component
-    { label: 'Update Task Details', value: 'update', api: '/api/tasks/update' }, // append /:id in component
-    { label: 'Delete Task', value: 'delete', api: '/api/tasks/delete' }, // append /:id in component
 ];
 
 export const timeTabs = [

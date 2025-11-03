@@ -124,12 +124,12 @@ const ProjectListTable = ({ api }) => {
                     <div className="p-4 bg-white rounded-lg shadow space-y-6">
                         {/* Project Name */}
                         <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Project Name</span>
+                            <span className="span-label-style">Project Name</span>
                             <span className="text-lg font-bold text-blue-400">{selectedProject.name}</span>
                         </div>
                         {/* Description */}
                         <div className="sidebar-scroll flex flex-col h-96 overflow-y-auto">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Description</span>
+                            <span className="span-label-style">Description</span>
                             <div
                                 className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
                                 dangerouslySetInnerHTML={{ __html: selectedProject.description }}
@@ -138,11 +138,11 @@ const ProjectListTable = ({ api }) => {
                         {/* Manager */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Manager</span>
+                                <span className="span-label-style">Manager</span>
                                 <span className="text-base text-gray-700">{selectedProject.manager_first_name} {selectedProject.manager_last_name}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
+                                <span className="span-label-style">Status</span>
                                 <span className={`text-base font-semibold ${selectedProject.status === 'active' ? 'text-green-600' : selectedProject.status === 'completed' ? 'text-blue-600' : 'text-red-500'}`}>
                                     {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}
                                 </span>
@@ -151,11 +151,11 @@ const ProjectListTable = ({ api }) => {
                         {/* Dates */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Date</span>
+                                <span className="span-label-style">Start Date</span>
                                 <span className="text-base text-gray-700">{selectedProject.start_date}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
+                                <span className="span-label-style">Due Date</span>
                                 <span className="text-base text-gray-700">{selectedProject.due_date}</span>
                             </div>
                         </div>

@@ -14,6 +14,9 @@ import ProjectListTable from './projects/ProjectListTable';
 import ProjectDetailsUpdate from './projects/ProjectDetailsUpdate';
 import ProjectDelete from './projects/ProjectDelete';
 
+import TaskCreateForm from './tasks/TaskCreateForm';
+import TaskListTable from './tasks/TaskListTable';
+
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
 
@@ -21,10 +24,14 @@ const Workspace = ({ activeTab, roleId }) => {
         setActiveTopTab(getDefaultTopTab(activeTab));
     }, [activeTab]);
 
+    // Filter out "create" tab for tasks if roleId === 3
     const topTabs =
         activeTab === 'projects' ? projectTabs :
-            activeTab === 'tasks' ? taskTabs :
-                activeTab === 'users' ? userTabs :
+            activeTab === 'tasks'
+                ? (roleId === 3
+                    ? taskTabs.filter(tab => tab.value !== 'create')
+                    : taskTabs)
+                : activeTab === 'users' ? userTabs :
                     activeTab === 'time' ? timeTabs :
                         [];
 
@@ -74,6 +81,18 @@ const Workspace = ({ activeTab, roleId }) => {
         }
     };
 
+    const renderTaskTabContent = () => {
+        switch (activeTopTab) {
+            case 'create':
+                // Only render if roleId !== 3
+                return roleId !== 3 ? <TaskCreateForm api={apiEndpoint} /> : null;
+            case 'list':
+                return <TaskListTable api={apiEndpoint} />;
+            default:
+                return <div className="text-gray-500">Tab content will go here.</div>;
+        }
+    };
+
     return (
         <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
             {/* Top Tabs - sticky at top */}
@@ -110,6 +129,7 @@ const Workspace = ({ activeTab, roleId }) => {
                     </h3>
                     {activeTab === "users" && renderUserTabContent()}
                     {activeTab === "projects" && renderProjectTabContent()}
+                    {activeTab === "tasks" && renderTaskTabContent()}
                 </div>
             </div>
         </div>
