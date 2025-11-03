@@ -21,7 +21,6 @@ const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ error: "Access denied. No token provided." });
   }
   const token = authHeader.split(" ")[1];
-  console.log("Received token:", token);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     // Fetch user info from DB

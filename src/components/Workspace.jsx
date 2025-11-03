@@ -12,7 +12,7 @@ import UserDelete from './users/UserDelete';
 import ProjectCreateForm from './projects/ProjectCreateForm';
 import ProjectListTable from './projects/ProjectListTable';
 import ProjectDetailsUpdate from './projects/ProjectDetailsUpdate';
-// import ProjectDelete from './projects/ProjectDelete';
+import ProjectDelete from './projects/ProjectDelete';
 
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
