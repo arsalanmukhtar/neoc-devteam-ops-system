@@ -86,3 +86,21 @@ export const login = async (req, res) => {
     res.status(500).json({ error: "Server error during login." });
   }
 };
+
+// filepath: controllers/authController.js
+export const getMe = async (req, res) => {
+  try {
+    // Assuming you use JWT and have middleware to set req.user
+    const user = req.user;
+    console.log("Authenticated user:", req.user);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+    res.json({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      // add other fields if needed
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};

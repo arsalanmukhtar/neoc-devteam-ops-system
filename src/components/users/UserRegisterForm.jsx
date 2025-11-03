@@ -142,7 +142,22 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                     onClose={() => setSuccess("")}
                 />
             )}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-4">
+                <button
+                    type="button"
+                    className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
+                    onClick={() => setForm({
+                        first_name: '',
+                        last_name: '',
+                        email: '',
+                        password: '',
+                        role_id: '',
+                        is_active: ''
+                    })}
+                    disabled={loading}
+                >
+                    Clear Form
+                </button>
                 <button type="submit" className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition" disabled={loading}>
                     {loading ? "Registering..." : "Register User"}
                 </button>

@@ -1,5 +1,6 @@
 import React from 'react';
 import ndmaLogo from '../assets/images/ndma-logo.png';
+import UserInfo from './UserInfo';
 
 const roles = [
     { label: 'Administrator', value: 1 },
@@ -24,12 +25,7 @@ const Navbar = ({ selectedRole, setSelectedRole, isAuthenticated, onLogout }) =>
                 </button>
             ))} */}
             {isAuthenticated && (
-                <button
-                    className="bg-red-400 text-white font-normal px-4 py-2 rounded-full hover:bg-red-500 transition"
-                    onClick={onLogout}
-                >
-                    Logout
-                </button>
+                <UserInfo onLogout={onLogout} />
             )}
         </div>
     </nav>

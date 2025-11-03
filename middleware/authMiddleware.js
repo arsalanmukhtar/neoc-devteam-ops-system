@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { pool } from "../server.js";
 
 // --- CONFIGURATION ---
 // NOTE: Ensure this is the EXACT same secret used in routes/authRoutes.js
@@ -14,32 +15,25 @@ export const DEV_ROLE_ID = 3;
 /**
  * Verifies the JWT token from the Authorization header and attaches user data (ID, Role) to req.user.
  */
-const authMiddleware = (req, res, next) => {
-  // 1. Check for the token in the 'Authorization' header ('Bearer <token>')
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Access denied. No token provided." });
   }
-
-  // Extract the token part (strip "Bearer ")
   const token = authHeader.split(" ")[1];
-
+  console.log("Received token:", token);
   try {
-    // 2. Verify and decode the token
     const decoded = jwt.verify(token, JWT_SECRET);
-
-    // 3. Attach user data to the request object
-    req.user = {
-      user_id: decoded.user_id,
-      role_id: decoded.role_id,
-    };
-
-    // 4. Proceed to the next middleware or route handler
+    // Fetch user info from DB
+    const result = await pool.query(
+      "SELECT user_id, first_name, last_name, email, role_id FROM users WHERE user_id = $1",
+      [decoded.user_id]
+    );
+    const user = result.rows[0];
+    if (!user) return res.status(401).json({ error: "User not found" });
+    req.user = user;
     next();
   } catch (ex) {
-    // Catches token errors (e.g., invalid signature, expired)
-    console.error("JWT verification failed:", ex.message);
     res.status(400).json({ error: "Invalid or expired token." });
   }
 };

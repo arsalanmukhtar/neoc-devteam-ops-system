@@ -38,7 +38,7 @@ const Login = ({ onLogin, selectedRole }) => {
 
   return (
     <>
-      <div className="login-container max-w-md mx-auto mt-32 p-8 rounded-xl">
+      <div className="login-container max-w-md mx-auto h-auto mt-32 p-8 rounded-xl bg-white">
         <h2 className="text-green-600 text-center text-2xl font-semibold mb-12">Account Login</h2>
         {/* MESSAGES */}
         {error && (

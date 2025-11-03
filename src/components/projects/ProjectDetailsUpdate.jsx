@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Select, Button } from "@mantine/core";
+import { Select } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
@@ -377,8 +377,23 @@ const ProjectDetailsUpdate = ({ api }) => {
                     {success && <div className="text-green-600">{success}</div>}
 
                     {/* SUBMIT */}
-                    <div className="flex justify-end">
-                        <Button
+                    <div className="flex justify-end gap-4">
+                        <button
+                            type="button"
+                            className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
+                            onClick={() => setForm({
+                                name: "",
+                                description: "",
+                                manager_id: "",
+                                status: "",
+                                start_date: "",
+                                due_date: "",
+                            })}
+                            disabled={loading}
+                        >
+                            Clear Form
+                        </button>
+                        <button
                             type="submit"
                             className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition"
                             radius="xl"
@@ -386,7 +401,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                             loading={loading}
                         >
                             {loading ? "Updating..." : "Update Project"}
-                        </Button>
+                        </button>
                     </div>
                 </form>
             )}

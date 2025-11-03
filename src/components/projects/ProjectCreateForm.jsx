@@ -4,7 +4,7 @@ import NotificationAlert from "../NotificationAlert";
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
 
-import { Select, Button } from "@mantine/core";
+import { Select } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates"; // ✅ correct mantine v6 import
 import { useEditor, EditorContent } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
@@ -400,8 +400,23 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
             )}
 
             {/* SUBMIT */}
-            <div className="flex justify-end">
-                <Button
+            <div className="flex justify-end gap-4">
+                <button
+                    type="button"
+                    className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
+                    onClick={() => setForm({
+                        name: "",
+                        description: "",
+                        manager_id: "",
+                        status: "",
+                        start_date: "",
+                        due_date: "",
+                    })}
+                    disabled={loading}
+                >
+                    Clear Form
+                </button>
+                <button
                     type="submit"
                     className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition"
                     radius="xl"
@@ -409,7 +424,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                     loading={loading}
                 >
                     {loading ? "Creating..." : "Create Project"}
-                </Button>
+                </button>
             </div>
         </form>
     );
