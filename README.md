@@ -173,6 +173,24 @@ This section explains how to safely add new fields (columns) to your database ta
 
 
 ============================================
+
+Now in the #file:timeEntryCreateForm.jsx and #sym:TimeEntryListTable , I have another feature to add.
+
+Every time a user creates or updates a time entry, we have to send an accept or reject the request to the role_id 1 and 2
+
+I want this change in db so tell me how to do that.
+There will be another tab inside the #file:Sidebar.jsx where we show all the time entries in general in a table with a Accept or Reject button. Once a role_id 1 or 2 accepts it then it goes into the list of time_entries table (maybe you need an intermediate table to hold the pending requests of time entries by role_id 3)
+
+If the role id 1, 2 rejects the time entry request, then it should be deleted permanently from intermediate table rather than pusing to time_entries table.
+
+This should be a solid feature so that I can see requests even if I restart my pc or application itself because you need to store these requests in the intermediate table called requests with all the necessary information.
+
+So guide me exactly in which files I need to make changes exactly where and what are db changes. What will be the attributes of this requests table.
+
+Also this Requests sidebar tab should be only visible to role_id 1 or 2 and restricted for 3
+
+---
+
 Backend/API Changes
 On create/update time entry by role_id 3:
 Insert into requests table instead of time_entries.
