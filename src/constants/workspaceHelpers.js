@@ -1,8 +1,8 @@
 export const getDefaultTopTab = (activeTab) => {
     if (activeTab === 'users') return 'register';
-    if (activeTab === 'projects') return 'create';
-    if (activeTab === 'tasks') return 'create';
-    if (activeTab === 'time') return 'create';
+    if (activeTab === 'projects') return 'list';
+    if (activeTab === 'tasks') return 'list';
+    if (activeTab === 'time') return 'list';
     return '';
 };
 

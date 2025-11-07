@@ -51,7 +51,7 @@ export const getAllTasks = async (req, res) => {
   const { project_id, assigned_to_id } = req.query;
   let query = `
         SELECT 
-            t.task_id, t.title, t.description, t.priority, t.status, t.due_date, t.created_at,
+            t.task_id, t.assigned_to_id,t.title, t.description, t.priority, t.status, t.due_date, t.created_at,
             p.name AS project_name,
             u.first_name AS assigned_first_name, 
             u.last_name AS assigned_last_name

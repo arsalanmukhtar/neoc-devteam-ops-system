@@ -32,8 +32,8 @@ const UserInfo = ({ onLogout }) => {
                 // Optionally handle error
             }
         };
-        if (open) fetchUser();
-    }, [open]);
+        fetchUser();
+    }, []);
 
     // Close popup when clicking outside
     useEffect(() => {
@@ -54,11 +54,17 @@ const UserInfo = ({ onLogout }) => {
         <div className="relative" ref={ref}>
             <button
                 type="button"
-                className="w-10 h-10 rounded-full bg-transparent flex items-center justify-center shadow hover:bg-green-200 transition"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition overflow-hidden"
                 onClick={() => setOpen((o) => !o)}
                 title="User Info"
             >
-                <IoPersonCircle size={50} color="#22c55e" />
+                <img
+                    src={`https://ui-avatars.com/api/?size=128&background=random&name=${encodeURIComponent(
+                        (user.first_name || "") + " " + (user.last_name || "")
+                    )}`}
+                    alt="User Avatar"
+                    className="w-12 h-12 rounded-full object-cover"
+                />
             </button>
             {open && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-5 z-50">

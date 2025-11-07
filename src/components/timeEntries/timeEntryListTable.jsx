@@ -276,10 +276,12 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
             >
                 {selectedEntry && (
                     <div className="p-4 bg-white rounded-lg shadow space-y-6">
+                        {/* Task Title */}
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Task Title</span>
                             <span className="text-lg font-bold text-blue-400">{selectedEntry.task_title || '-'}</span>
                         </div>
+                        {/* User */}
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">User</span>
                             <span className="text-base text-gray-700">
@@ -288,33 +290,40 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                                     : '-'}
                             </span>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Time</span>
-                            <span className="text-base text-gray-700">{selectedEntry.start_time || '-'}</span>
+                        {/* Start Time & End Time side by side */}
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Time</span>
+                                <span className="text-base text-gray-700">{selectedEntry.start_time || '-'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">End Time</span>
+                                <DateTimePicker
+                                    value={modalEndTime}
+                                    onChange={setModalEndTime}
+                                    classNames={{
+                                        input: "input-border font-sans",
+                                        dropdown: "font-sans",
+                                        item: "font-sans",
+                                    }}
+                                    radius="xl"
+                                    size="md"
+                                    required
+                                />
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">End Time</span>
-                            <DateTimePicker
-                                value={modalEndTime}
-                                onChange={setModalEndTime}
-                                classNames={{
-                                    input: "input-border font-sans",
-                                    dropdown: "font-sans",
-                                    item: "font-sans",
-                                }}
-                                radius="xl"
-                                size="md"
-                                required
-                            />
+                        {/* Duration & Created At side by side */}
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Duration (hr)</span>
+                                <span className="text-base text-gray-700">{selectedEntry.duration || '-'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Created At</span>
+                                <span className="text-base text-gray-700">{selectedEntry.created_at || '-'}</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Duration (hr)</span>
-                            <span className="text-base text-gray-700">{selectedEntry.duration || '-'}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Created At</span>
-                            <span className="text-base text-gray-700">{selectedEntry.created_at || '-'}</span>
-                        </div>
+                        {/* Notes */}
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Notes</span>
                             {/* Editable TipTap Editor with toolbar */}

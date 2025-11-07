@@ -23,12 +23,25 @@ const TimeEntryCreateForm = ({ onCreated }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [roleId, setRoleId] = useState(null);
+    const [userId, setUserId] = useState(null);
     const colorInputRef = useRef();
+
+    // Get role_id and user_id from localStorage
+    useEffect(() => {
+        setRoleId(Number(localStorage.getItem("role_id")));
+        setUserId(localStorage.getItem("user_id"));
+    }, []);
 
     // Fetch tasks for dropdown
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/tasks/list", {
+        let url = baseURL + "/api/tasks/list";
+        // Only restrict by assigned_to_id if roleId === 3 (Developer)
+        if (roleId === 3 && userId) {
+            url += `?assigned_to_id=${userId}`;
+        }
+        fetch(url, {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -36,7 +49,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
         })
             .then(res => res.json())
             .then(data => setTasks(Array.isArray(data) ? data : []));
-    }, []);
+    }, [roleId, userId]);
 
     // Mantine TipTap Editor for notes
     const editor = useEditor({
@@ -70,7 +83,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
         setSuccess('');
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(baseURL + '/api/time/create', {
+            const res = await fetch(`${baseURL}/api/requests/time-entry`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -78,14 +91,13 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                 },
                 body: JSON.stringify({
                     ...form,
-                    // Ensure start_time is ISO string if using Date object
                     start_time: form.start_time instanceof Date ? form.start_time.toISOString() : form.start_time,
                     end_time: form.end_time instanceof Date ? form.end_time.toISOString() : form.end_time,
                 })
             });
             const data = await res.json();
             if (res.ok) {
-                setSuccess('Time entry created successfully!');
+                setSuccess('Time entry request submitted for approval!');
                 setForm({
                     task_id: '',
                     start_time: '',
@@ -95,7 +107,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                 if (editor) editor.commands.setContent("");
                 if (onCreated) onCreated(data);
             } else {
-                setError(data.error || 'Creation failed');
+                setError(data.error || 'Request submission failed');
             }
         } catch {
             setError('Network error');

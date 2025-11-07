@@ -20,6 +20,7 @@ import TaskListTable from './tasks/TaskListTable';
 import TimeEntryCreateForm from './timeEntries/timeEntryCreateForm';
 import TimeEntryListTable from './timeEntries/timeEntryListTable';
 
+import RequestListTable from './requests/RequestListTable'; // <-- Add this import
 
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
@@ -107,6 +108,15 @@ const Workspace = ({ activeTab, roleId }) => {
                 return <div className="text-gray-500">Tab content will go here.</div>;
         }
     };
+
+    // Render requests tab content (only for roleId 1 or 2)
+    const renderRequestsTabContent = () => {
+        if (roleId === 1 || roleId === 2) {
+            return <RequestListTable />;
+        }
+        return <div className="text-gray-500">You do not have access to this section.</div>;
+    };
+
     return (
         <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
             {/* Top Tabs - sticky at top */}
@@ -145,6 +155,7 @@ const Workspace = ({ activeTab, roleId }) => {
                     {activeTab === "projects" && renderProjectTabContent()}
                     {activeTab === "tasks" && renderTaskTabContent()}
                     {activeTab === "time" && renderTimeTabContent()}
+                    {activeTab === "requests" && renderRequestsTabContent()}
                 </div>
             </div>
         </div>

@@ -1,13 +1,12 @@
 import React from 'react';
-import { GrProjects, GrTask, GrDocumentTime, GrUserSettings } from "react-icons/gr";
-import { FcApproval } from "react-icons/fc";
+import { GrProjects, GrList, GrTask, GrDocumentTime, GrUserSettings } from "react-icons/gr";
 
 const tabs = [
     { label: 'Users', value: 'users', icon: <GrUserSettings size={20} /> },
     { label: 'Projects', value: 'projects', icon: <GrProjects size={20} /> },
-    { label: 'Tasks', value: 'tasks', icon: <GrTask size={20} /> },
+    { label: 'Tasks', value: 'tasks', icon: <GrList size={20} /> },
     { label: 'Time Entries', value: 'time', icon: <GrDocumentTime size={20} /> },
-    { label: 'Requests', value: 'requests', icon: <FcApproval size={20} /> },
+    { label: 'Requests', value: 'requests', icon: <GrTask size={20} /> },
     // Add more tabs here as needed
 ];
 

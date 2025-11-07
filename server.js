@@ -11,6 +11,7 @@ import projectRoutes from "./routes/projectRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import timeRoutes from "./routes/timeRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import requestRoutes from './routes/requestRoutes.js';
 
 const { Pool } = pkg;
 
@@ -74,6 +75,9 @@ app.use('/api/time', timeRoutes);
 
 // 6. Use the user management routes
 app.use('/api/users', userRoutes);
+
+// 7. Use the request routes
+app.use('/api/requests', requestRoutes);
 
 // --- Server Startup ---
 app.listen(PORT, () => {

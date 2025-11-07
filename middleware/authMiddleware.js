@@ -44,18 +44,17 @@ const authMiddleware = async (req, res, next) => {
  * * @param {number} requiredRoleId - The role_id required to access the resource (e.g., ADMIN_ROLE_ID)
  */
 export const checkRole = (requiredRoleId) => (req, res, next) => {
-  // Ensure req.user exists (meaning authMiddleware ran successfully)
   if (!req.user) {
-    return res
-      .status(500)
-      .json({
-        error: "Role check failed: User data missing (check middleware order).",
-      });
+    return res.status(500).json({
+      error: "Role check failed: User data missing (check middleware order).",
+    });
   }
 
-  // Check if the user's role matches the required role
-  if (req.user.role_id === requiredRoleId) {
-    // Role is authorized, continue
+  // Support both single role and array of roles
+  if (
+    (Array.isArray(requiredRoleId) && requiredRoleId.includes(req.user.role_id)) ||
+    req.user.role_id === requiredRoleId
+  ) {
     next();
   } else {
     res

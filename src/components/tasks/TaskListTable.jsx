@@ -51,9 +51,6 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         let url = baseURL + api;
-        if (roleId === 3 && userId) {
-            url += `?assigned_to_id=${userId}`;
-        }
         fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -62,10 +59,11 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
         })
             .then(res => res.json())
             .then(data => {
+                console.log("Fetched tasks:", data);
                 setTasks(Array.isArray(data) ? data : []);
                 setLoading(false);
             });
-    }, [api, roleId, userId]);
+    }, [api]);
 
     const columns = useMemo(
         () => [
@@ -227,6 +225,12 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
         setSaveLoading(false);
     };
 
+    // Check if role 3 user can edit status for this task
+    const canEditStatus = () => {
+        if (roleId !== 3) return true;
+        return selectedTask?.assigned_to_id === userId;
+    };
+
     if (loading) {
         return (
             <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
@@ -314,6 +318,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                                     data={statusOptions}
                                     value={modalStatus}
                                     onChange={setModalStatus}
+                                    disabled={!canEditStatus()}
                                     classNames={{
                                         input: 'input-border font-sans',
                                         dropdown: 'font-sans',

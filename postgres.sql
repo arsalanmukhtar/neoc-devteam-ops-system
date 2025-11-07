@@ -41,8 +41,8 @@ CREATE TABLE "users" (
     -- System Status
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     -- Timestamps
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for quick email lookups during login
@@ -63,7 +63,7 @@ CREATE TABLE "projects" (
     status VARCHAR(50) NOT NULL DEFAULT 'Planning',
     start_date DATE,
     due_date DATE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for quick access by project manager
@@ -86,7 +86,7 @@ CREATE TABLE "tasks" (
     priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
     status VARCHAR(50) NOT NULL DEFAULT 'To Do',
     due_date DATE,
-    created_at TIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for common task queries (e.g., "all tasks for a user in a project")
@@ -103,12 +103,12 @@ CREATE TABLE "time_entries" (
     user_id UUID NOT NULL REFERENCES "users"(user_id) ON DELETE CASCADE,
     -- Which task the time was logged for
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
     -- Duration will be calculated, but storing it is often helpful for reports
     duration DECIMAL(10, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) STORED,
     notes TEXT,
-    created_at TIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for common reporting queries (e.g., "all time entries for a user over a date range")
@@ -119,26 +119,22 @@ CREATE INDEX idx_time_entries_user_time ON "time_entries" (user_id, start_time D
 --
 -- 7. REQUESTS Table (to handle task assignment requests)
 --
+
 CREATE TABLE "requests"
 (
     request_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES "users"(user_id) ON DELETE CASCADE,
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
-    start_time TIMESTAMP
-    WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP
-    WITH TIME ZONE,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
     notes TEXT,
-    status VARCHAR
-    (20) NOT NULL DEFAULT 'pending', -- 'pending', 'accepted', 'rejected'
-    created_at TIMESTAMP
-    WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reviewed_by UUID REFERENCES "users"
-    (user_id), -- who accepted/rejected
-    reviewed_at TIMESTAMP
-    WITH TIME ZONE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by UUID REFERENCES "users"(user_id),
+    reviewed_at TIMESTAMP,
     review_comment TEXT
 );
+
 
 -- Index for quick access
 CREATE INDEX idx_requests_status ON "requests" (status);
