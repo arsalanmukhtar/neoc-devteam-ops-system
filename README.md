@@ -170,3 +170,15 @@ This section explains how to safely add new fields (columns) to your database ta
   Or, allow the field to be `NULL` and update it later via your app’s update functionality.
 
 ---
+
+
+============================================
+Backend/API Changes
+On create/update time entry by role_id 3:
+Insert into requests table instead of time_entries.
+On accept by role_id 1 or 2:
+Move the request from requests to time_entries (copy all relevant fields).
+Update requests.status to 'accepted', set reviewed_by, reviewed_at.
+On reject:
+Update requests.status to 'rejected', set reviewed_by, reviewed_at, optionally add review_comment.
+Optionally, delete the row after review (or keep for audit).

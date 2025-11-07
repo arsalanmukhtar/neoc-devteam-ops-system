@@ -117,7 +117,36 @@ CREATE INDEX idx_time_entries_user_time ON "time_entries" (user_id, start_time D
 -----------------------------------------------------------------------
 
 --
--- 7. TRIGGER FUNCTION (Automated 'updated_at' column maintenance)
+-- 7. REQUESTS Table (to handle task assignment requests)
+--
+CREATE TABLE "requests"
+(
+    request_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES "users"(user_id) ON DELETE CASCADE,
+    task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
+    start_time TIMESTAMP
+    WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP
+    WITH TIME ZONE,
+    notes TEXT,
+    status VARCHAR
+    (20) NOT NULL DEFAULT 'pending', -- 'pending', 'accepted', 'rejected'
+    created_at TIMESTAMP
+    WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_by UUID REFERENCES "users"
+    (user_id), -- who accepted/rejected
+    reviewed_at TIMESTAMP
+    WITH TIME ZONE,
+    review_comment TEXT
+);
+
+-- Index for quick access
+CREATE INDEX idx_requests_status ON "requests" (status);
+
+-----------------------------------------------------------------------
+
+--
+-- 8. TRIGGER FUNCTION (Automated 'updated_at' column maintenance)
 --
 CREATE OR REPLACE FUNCTION set_updated_at_timestamp()
 RETURNS TRIGGER AS $$

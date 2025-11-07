@@ -1,16 +1,18 @@
 import React from 'react';
 import { GrProjects, GrTask, GrDocumentTime, GrUserSettings } from "react-icons/gr";
+import { FcApproval } from "react-icons/fc";
 
 const tabs = [
     { label: 'Users', value: 'users', icon: <GrUserSettings size={20} /> },
     { label: 'Projects', value: 'projects', icon: <GrProjects size={20} /> },
     { label: 'Tasks', value: 'tasks', icon: <GrTask size={20} /> },
     { label: 'Time Entries', value: 'time', icon: <GrDocumentTime size={20} /> },
+    { label: 'Requests', value: 'requests', icon: <FcApproval size={20} /> },
     // Add more tabs here as needed
 ];
 
 const Sidebar = ({ activeTab, setActiveTab }) => (
-    <aside className="bg-white w-72 min-h-0 h-full flex flex-col py-10 border-r border-gray-200 overflow-y-auto sidebar-scroll">
+    <aside className="bg-white h-full flex flex-col py-10 border-r border-gray-200 overflow-y-auto sidebar-scroll w-60 min-w-60 max-w-60">
         <nav className="flex flex-col gap-4 px-4">
             {tabs.map(tab => (
                 <button
