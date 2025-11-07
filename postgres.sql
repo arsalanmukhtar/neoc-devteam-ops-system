@@ -104,7 +104,7 @@ CREATE TABLE "time_entries" (
     -- Which task the time was logged for
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE,
     -- Duration will be calculated, but storing it is often helpful for reports
     duration DECIMAL(10, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) STORED,
     notes TEXT,

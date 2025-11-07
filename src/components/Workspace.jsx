@@ -17,6 +17,10 @@ import ProjectDelete from './projects/ProjectDelete';
 import TaskCreateForm from './tasks/TaskCreateForm';
 import TaskListTable from './tasks/TaskListTable';
 
+import TimeEntryCreateForm from './timeEntries/timeEntryCreateForm';
+import TimeEntryListTable from './timeEntries/timeEntryListTable';
+
+
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
 
@@ -93,6 +97,16 @@ const Workspace = ({ activeTab, roleId }) => {
         }
     };
 
+    const renderTimeTabContent = () => {
+        switch (activeTopTab) {
+            case 'create':
+                return <TimeEntryCreateForm api={apiEndpoint} />;
+            case 'list':
+                return <TimeEntryListTable api={apiEndpoint} />;
+            default:
+                return <div className="text-gray-500">Tab content will go here.</div>;
+        }
+    };
     return (
         <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
             {/* Top Tabs - sticky at top */}
@@ -130,6 +144,7 @@ const Workspace = ({ activeTab, roleId }) => {
                     {activeTab === "users" && renderUserTabContent()}
                     {activeTab === "projects" && renderProjectTabContent()}
                     {activeTab === "tasks" && renderTaskTabContent()}
+                    {activeTab === "time" && renderTimeTabContent()}
                 </div>
             </div>
         </div>

@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Overpass", "sans-serif"],
+        sans: ["Poppins", "sans-serif"],
       },
     },
   },

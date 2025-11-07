@@ -89,11 +89,11 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,
-            Underline,
-            BulletList,
-            OrderedList,
-            ListItem,
-            Blockquote,
+            // Underline,
+            // BulletList,
+            // OrderedList,
+            // ListItem,
+            // Blockquote,
             Color,
             TextStyle,
             Highlight

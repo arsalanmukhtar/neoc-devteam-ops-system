@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+import { PiHighlighterDuotone } from "react-icons/pi";
+import { IoMdClose } from "react-icons/io";
+
 import { Select } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -35,6 +39,9 @@ const ProjectDetailsUpdate = ({ api }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Add a ref for the color input
+    const colorInputRef = useRef();
 
     // Fetch all projects for selection
     useEffect(() => {
@@ -107,11 +114,11 @@ const ProjectDetailsUpdate = ({ api }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,
-            Underline,
-            BulletList,
-            OrderedList,
-            ListItem,
-            Blockquote,
+            // Underline,
+            // BulletList,
+            // OrderedList,
+            // ListItem,
+            // Blockquote,
             Color,
             TextStyle,
             Highlight,
@@ -262,34 +269,90 @@ const ProjectDetailsUpdate = ({ api }) => {
                                 onClick={() => editor && editor.chain().focus().toggleHighlight().run()}
                                 disabled={!editor}
                                 title="Highlight"
+                                style={{
+                                    background: editor && editor.isActive('highlight') ? '#ffe066' : 'transparent',
+                                    borderRadius: '4px',
+                                    padding: '4px',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
                             >
-                                <span style={{ background: '#ffe066', padding: '0 4px', borderRadius: '2px' }}>H</span>
+                                <PiHighlighterDuotone
+                                    size={18}
+                                    color={editor && editor.isActive('highlight') ? '#a16207' : '#555'}
+                                    style={{ transition: 'color 0.2s' }}
+                                />
                             </button>
+                            <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => colorInputRef.current && colorInputRef.current.click()}
+                                    disabled={!editor}
+                                    title="Pick Color"
+                                    style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
+                                >
+                                    <span
+                                        style={{
+                                            display: 'inline-block',
+                                            width: '20px',
+                                            height: '20px',
+                                            background: editor && editor.getAttributes('textStyle').color ? editor.getAttributes('textStyle').color : '#eee',
+                                            border: '1px solid #ccc',
+                                            borderRadius: '4px',
+                                            verticalAlign: 'middle',
+                                            marginRight: '2px',
+                                            transition: 'background 0.2s'
+                                        }}
+                                    />
+                                </button>
+                                <input
+                                    type="color"
+                                    ref={colorInputRef}
+                                    style={{
+                                        display: 'block',
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: '100%',
+                                        zIndex: 10,
+                                        marginTop: '2x',
+                                        border: 'none',
+                                        background: 'transparent',
+                                        padding: 0,
+                                        width: '20px',
+                                        height: '20px',
+                                        cursor: 'pointer',
+                                        opacity: 0
+                                    }}
+                                    onChange={e => {
+                                        if (editor) {
+                                            editor.chain().focus().setColor(e.target.value).run();
+                                        }
+                                    }}
+                                    tabIndex={-1}
+                                />
+                            </div>
                             <button
                                 type="button"
-                                onClick={() => editor && editor.chain().focus().setColor('#e53e3e').run()}
+                                onClick={() => editor && editor.chain().focus().unsetColor().run()}
                                 disabled={!editor}
-                                title="Red"
+                                title="Remove Color"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '2px',
+                                    borderRadius: '4px',
+                                    background: 'transparent',
+                                    transition: 'background 0.2s'
+                                }}
                             >
-                                <span style={{ color: '#e53e3e' }}>A</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().setColor('#2563eb').run()}
-                                disabled={!editor}
-                                title="Blue"
-                            >
-                                <span style={{ color: '#2563eb' }}>A</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().setColor('#16a34a').run()}
-                                disabled={!editor}
-                                title="Green"
-                            >
-                                <span style={{ color: '#16a34a' }}>A</span>
+                                <IoMdClose size={18} color="#555" />
                             </button>
                         </div>
+
+                        {/* Content Box */}
                         <div className="sidebar-scroll border border-gray-300 p-3 min-h-[150px] h-96 bg-white overflow-y-auto">
                             <EditorContent editor={editor} className="tiptap" />
                         </div>

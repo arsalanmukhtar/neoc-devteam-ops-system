@@ -76,11 +76,11 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,
-            Underline,
-            BulletList,
-            OrderedList,
-            ListItem,
-            Blockquote,
+            // Underline,
+            // BulletList,
+            // OrderedList,
+            // ListItem,
+            // Blockquote,
             Color,
             TextStyle,
             Highlight
@@ -416,13 +416,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                 >
                     Clear Form
                 </button>
-                <button
-                    type="submit"
-                    className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition"
-                    radius="xl"
-                    size="md"
-                    loading={loading}
-                >
+                <button type="submit" className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition">
                     {loading ? "Creating..." : "Create Project"}
                 </button>
             </div>

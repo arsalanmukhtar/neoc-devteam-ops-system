@@ -21,6 +21,6 @@ export const taskTabs = [
 export const timeTabs = [
     { label: 'Create Time Entry', value: 'create', api: '/api/time/create' },
     { label: 'List Time Entries', value: 'list', api: '/api/time/list' },
-    { label: 'Update Time Entry', value: 'update', api: '/api/time/update' }, // append /:id in component
-    { label: 'Delete Time Entry', value: 'delete', api: '/api/time/delete' }, // append /:id in component
+    // { label: 'Update Time Entry', value: 'update', api: '/api/time/update' }, // append /:id in component
+    // { label: 'Delete Time Entry', value: 'delete', api: '/api/time/delete' }, // append /:id in component
 ];

@@ -41,29 +41,53 @@ export const createTimeEntry = async (req, res) => {
 export const getAllTimeEntries = async (req, res) => {
   const { task_id, start_date, end_date } = req.query;
   const user_id = req.user.user_id;
+  const role_id = req.user.role_id;
 
   let query = `
-        SELECT entry_id, task_id, start_time, end_time, duration, notes 
-        FROM time_entries 
-        WHERE user_id = $1
-    `;
-  const params = [user_id];
-  let paramCount = 2;
+    SELECT 
+      te.entry_id, 
+      te.task_id, 
+      t.title AS task_title, 
+      te.start_time, 
+      te.end_time, 
+      te.duration, 
+      te.notes, 
+      te.created_at,
+      u.first_name AS user_first_name,
+      u.last_name AS user_last_name
+    FROM time_entries te
+    JOIN tasks t ON te.task_id = t.task_id
+    JOIN users u ON te.user_id = u.user_id
+  `;
+
+  // Role-based filtering
+  let where = [];
+  let params = [];
+  let paramCount = 1;
+
+  if (role_id === 3) {
+    where.push(`te.user_id = $${paramCount++}`);
+    params.push(user_id);
+  }
 
   if (task_id) {
-    query += ` AND task_id = $${paramCount++}`;
+    where.push(`te.task_id = $${paramCount++}`);
     params.push(task_id);
   }
   if (start_date) {
-    query += ` AND start_time >= $${paramCount++}`;
+    where.push(`te.start_time >= $${paramCount++}`);
     params.push(start_date);
   }
   if (end_date) {
-    query += ` AND end_time <= $${paramCount++}`;
+    where.push(`te.end_time <= $${paramCount++}`);
     params.push(end_date);
   }
 
-  query += ` ORDER BY start_time DESC`;
+  if (where.length) {
+    query += " WHERE " + where.join(" AND ");
+  }
+
+  query += " ORDER BY te.start_time DESC";
 
   try {
     const result = await pool.query(query, params);
@@ -80,25 +104,14 @@ export const getAllTimeEntries = async (req, res) => {
 export const updateTimeEntry = async (req, res) => {
   const { id } = req.params;
   const user_id = req.user.user_id;
-  const { task_id, start_time, end_time, notes } = req.body;
+  let { task_id, start_time, end_time, notes } = req.body;
 
-  if (!task_id || !start_time || !end_time) {
-    return res
-      .status(400)
-      .json({
-        error: "Task ID, start time, and end time are required for update.",
-      });
-  }
-
-  try {
+  // If only end_time or notes are sent, fetch the rest from DB
+  if (!task_id || !start_time) {
     const result = await pool.query(
-      `UPDATE time_entries 
-             SET task_id = $1, start_time = $2, end_time = $3, notes = $4
-             WHERE entry_id = $5 AND user_id = $6
-             RETURNING entry_id, task_id, duration`,
-      [task_id, start_time, end_time, notes, id, user_id]
+      `SELECT task_id, start_time FROM time_entries WHERE entry_id = $1 AND user_id = $2`,
+      [id, user_id]
     );
-
     if (result.rows.length === 0) {
       return res
         .status(404)
@@ -106,6 +119,31 @@ export const updateTimeEntry = async (req, res) => {
           error:
             "Time entry not found or you do not have permission to update it.",
         });
+    }
+    task_id = result.rows[0].task_id;
+    start_time = result.rows[0].start_time;
+  }
+
+  if (!task_id || !start_time || !end_time) {
+    return res.status(400).json({
+      error: "Task ID, start time, and end time are required for update.",
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE time_entries 
+             SET task_id = $1, start_time = $2, end_time = $3, notes = $4
+             WHERE entry_id = $5 AND user_id = $6
+             RETURNING entry_id, task_id, duration, notes`,
+      [task_id, start_time, end_time, notes, id, user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error:
+          "Time entry not found or you do not have permission to update it.",
+      });
     }
 
     res.json({
