@@ -98,7 +98,7 @@ const ProjectListTable = ({ api }) => {
 
     if (!projects.length) {
         return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#3b82f6', background: '#f8fafc', borderRadius: '8px' }}>
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#e53e3e', background: '#f8fafc', borderRadius: '8px' }}>
                 No projects found or unauthorized.
             </div>
         );

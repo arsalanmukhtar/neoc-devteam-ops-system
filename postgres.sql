@@ -86,7 +86,7 @@ CREATE TABLE "tasks" (
     priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
     status VARCHAR(50) NOT NULL DEFAULT 'To Do',
     due_date DATE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for common task queries (e.g., "all tasks for a user in a project")
@@ -103,12 +103,12 @@ CREATE TABLE "time_entries" (
     user_id UUID NOT NULL REFERENCES "users"(user_id) ON DELETE CASCADE,
     -- Which task the time was logged for
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
-    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITH TIME ZONE,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
     -- Duration will be calculated, but storing it is often helpful for reports
     duration DECIMAL(10, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) STORED,
     notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index for common reporting queries (e.g., "all time entries for a user over a date range")
