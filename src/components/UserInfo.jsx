@@ -59,7 +59,7 @@ const UserInfo = ({ onLogout }) => {
                 title="User Info"
             >
                 <img
-                    src={`https://ui-avatars.com/api/?size=128&background=random&name=${encodeURIComponent(
+                    src={`https://ui-avatars.com/api/?size=128&background=random&bold=true&name=${encodeURIComponent(
                         (user.first_name || "") + " " + (user.last_name || "")
                     )}`}
                     alt="User Avatar"

@@ -96,6 +96,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                         size="md"
                         value={form.role_id}
                         onChange={value => setForm({ ...form, role_id: value })}
+                        searchable
                         classNames={{
                             input: 'input-border font-sans',
                             dropdown: 'font-sans',
@@ -118,6 +119,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                         size="md"
                         value={form.is_active}
                         onChange={value => setForm({ ...form, is_active: value })}
+                        searchable
                         classNames={{
                             input: 'input-border font-sans',
                             dropdown: 'font-sans',

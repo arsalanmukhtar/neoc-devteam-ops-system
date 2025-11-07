@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { GoThumbsup, GoThumbsdown } from "react-icons/go";
 
+import NotificationAlert from "../NotificationAlert";
+
 const baseURL = "http://localhost:3000"; // Adjust if needed
 
 // Helper to calculate duration in hours
@@ -25,6 +27,9 @@ const RequestListTable = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertType, setAlertType] = useState("success");
+    const [alertMessage, setAlertMessage] = useState("");
 
     useEffect(() => {
         fetchRequests();
@@ -50,6 +55,12 @@ const RequestListTable = () => {
         setLoading(false);
     };
 
+    const showNotification = (type, message) => {
+        setAlertType(type);
+        setAlertMessage(message);
+        setShowAlert(true);
+    };
+
     const handleAccept = async (id) => {
         setError("");
         setSuccess("");
@@ -62,12 +73,15 @@ const RequestListTable = () => {
             const data = await res.json();
             if (res.ok) {
                 setSuccess("Request accepted!");
+                showNotification("success", "Request accepted!");
                 fetchRequests();
             } else {
                 setError(data.error || "Failed to accept request");
+                showNotification("error", data.error || "Failed to accept request");
             }
         } catch {
             setError("Network error");
+            showNotification("error", "Network error");
         }
     };
 
@@ -87,20 +101,21 @@ const RequestListTable = () => {
             const data = await res.json();
             if (res.ok) {
                 setSuccess("Request rejected!");
+                showNotification("success", "Request rejected!");
                 fetchRequests();
             } else {
                 setError(data.error || "Failed to reject request");
+                showNotification("error", data.error || "Failed to reject request");
             }
         } catch {
             setError("Network error");
+            showNotification("error", "Network error");
         }
     };
 
     return (
         <div className="p-6 bg-white rounded-xl shadow-lg">
             <h2 className="text-xl font-bold mb-4 text-gray-700">Pending Time Entry Requests</h2>
-            {error && <div className="text-red-500 mb-2 text-sm">{error}</div>}
-            {success && <div className="text-green-500 mb-2 text-sm">{success}</div>}
             <div className="overflow-x-auto">
                 <table className="min-w-full border border-gray-200 rounded-lg text-sm">
                     <thead>
@@ -135,23 +150,23 @@ const RequestListTable = () => {
                                     <td className="border-b px-3 py-2 text-center">
                                         <div className="flex flex-row items-center justify-center gap-4">
                                             <button
-                                                className="group rounded-full p-1 transition"
+                                                className="group bg-green-50 hover:bg-green-100 rounded-full p-2 shadow transition"
                                                 title="Accept"
                                                 onClick={() => handleAccept(req.request_id)}
                                             >
                                                 <GoThumbsup
                                                     size={28}
-                                                    className="text-green-400 hover:text-green-600 transition"
+                                                    className="text-green-500 group-hover:text-green-700 transition"
                                                 />
                                             </button>
                                             <button
-                                                className="group rounded-full p-1 transition"
+                                                className="group bg-red-50 hover:bg-red-100 rounded-full p-2 shadow transition"
                                                 title="Reject"
                                                 onClick={() => handleReject(req.request_id)}
                                             >
                                                 <GoThumbsdown
                                                     size={28}
-                                                    className="text-red-400 hover:text-red-600 transition"
+                                                    className="text-red-500 group-hover:text-red-700 transition"
                                                 />
                                             </button>
                                         </div>
@@ -162,6 +177,13 @@ const RequestListTable = () => {
                     </tbody>
                 </table>
             </div>
+            {showAlert && (
+                <NotificationAlert
+                    type={alertType === "error" ? "error" : "success"}
+                    message={alertMessage}
+                    onClose={() => setShowAlert(false)}
+                />
+            )}
         </div>
     );
 };

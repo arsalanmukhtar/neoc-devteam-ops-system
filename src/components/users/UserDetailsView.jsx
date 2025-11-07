@@ -54,6 +54,7 @@ const UserDetailsView = ({ api }) => {
                     size="md"
                     value={selectedId}
                     onChange={value => setSelectedId(value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',

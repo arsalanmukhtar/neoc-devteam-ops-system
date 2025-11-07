@@ -174,6 +174,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                     }))}
                     value={form.project_id}
                     onChange={(value) => handleSelectChange("project_id", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',
@@ -350,6 +351,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                     }))}
                     value={form.assigned_to_id}
                     onChange={(value) => handleSelectChange("assigned_to_id", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',
@@ -369,6 +371,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                     data={priorityOptions}
                     value={form.priority}
                     onChange={(value) => handleSelectChange("priority", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',
@@ -388,6 +391,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                     data={statusOptions}
                     value={form.status}
                     onChange={(value) => handleSelectChange("status", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',

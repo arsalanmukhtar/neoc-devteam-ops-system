@@ -315,6 +315,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                     }))}
                     value={form.manager_id}
                     onChange={(value) => handleSelectChange("manager_id", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',
@@ -334,6 +335,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                     data={statusOptions}
                     value={form.status}
                     onChange={(value) => handleSelectChange("status", value)}
+                    searchable
                     classNames={{
                         input: 'input-border font-sans',
                         dropdown: 'font-sans',
