@@ -12,6 +12,7 @@ import taskRoutes from "./routes/taskRoutes.js";
 import timeRoutes from "./routes/timeRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import requestRoutes from './routes/requestRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 const { Pool } = pkg;
 
@@ -78,6 +79,9 @@ app.use('/api/users', userRoutes);
 
 // 7. Use the request routes
 app.use('/api/requests', requestRoutes);
+
+// 8. Use the analytics routes
+app.use('/api/analytics', analyticsRoutes);
 
 // --- Server Startup ---
 app.listen(PORT, () => {

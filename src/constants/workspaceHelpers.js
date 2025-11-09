@@ -3,11 +3,12 @@ export const getDefaultTopTab = (activeTab) => {
     if (activeTab === 'projects') return 'list';
     if (activeTab === 'tasks') return 'list';
     if (activeTab === 'time') return 'list';
+    if (activeTab === 'analytics') return 'users';
     return '';
 };
 
 export const getAllowedTabs = (roleId) => {
-    if (roleId === 1) return ['users', 'projects', 'tasks', 'time', 'requests'];
+    if (roleId === 1) return ['users', 'projects', 'tasks', 'time', 'requests', 'analytics'];
     if (roleId === 2) return ['projects', 'tasks', 'time', 'requests'];
     if (roleId === 3) return ['tasks', 'time'];
     return [];

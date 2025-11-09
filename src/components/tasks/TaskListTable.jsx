@@ -5,15 +5,15 @@ import { Modal, Button, Select } from '@mantine/core';
 const baseURL = 'http://localhost:3000';
 
 const statusColors = {
-    pending: 'text-yellow-700',
-    in_progress: 'text-blue-700',
-    completed: 'text-green-700',
+    pending: 'text-yellow-700 font-semibold',
+    in_progress: 'text-blue-700 font-semibold',
+    completed: 'text-green-700 font-semibold',
 };
 
 const priorityColors = {
-    high: 'text-red-600 font-bold',
+    high: 'text-red-600 font-semibold',
     medium: 'text-yellow-600 font-semibold',
-    low: 'text-green-600',
+    low: 'text-green-600 font-semibold',
 };
 
 const statusOptions = [

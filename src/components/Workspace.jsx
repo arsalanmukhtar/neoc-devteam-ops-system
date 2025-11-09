@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { projectTabs, taskTabs, timeTabs, userTabs } from '../constants/tabs';
+import { projectTabs, taskTabs, timeTabs, userTabs, analyticsTabs } from '../constants/tabs';
 import { getDefaultTopTab, getAllowedTabs } from '../constants/workspaceHelpers';
 
 import UserRegisterForm from './users/UserRegisterForm';
@@ -22,6 +22,8 @@ import TimeEntryListTable from './timeEntries/timeEntryListTable';
 
 import RequestListTable from './requests/RequestListTable'; // <-- Add this import
 
+import Analytics from './analytics/Analytics';
+
 const Workspace = ({ activeTab, roleId }) => {
     const [activeTopTab, setActiveTopTab] = useState(getDefaultTopTab(activeTab));
 
@@ -31,14 +33,19 @@ const Workspace = ({ activeTab, roleId }) => {
 
     // Filter out "create" tab for tasks if roleId === 3
     const topTabs =
-        activeTab === 'projects' ? projectTabs :
-            activeTab === 'tasks'
+        activeTab === 'projects'
+            ? projectTabs
+            : activeTab === 'tasks'
                 ? (roleId === 3
                     ? taskTabs.filter(tab => tab.value !== 'create')
                     : taskTabs)
-                : activeTab === 'users' ? userTabs :
-                    activeTab === 'time' ? timeTabs :
-                        [];
+                : activeTab === 'users'
+                    ? userTabs
+                    : activeTab === 'time'
+                        ? timeTabs
+                        : activeTab === 'analytics'
+                            ? analyticsTabs
+                            : [];
 
     const allowedTabs = getAllowedTabs(roleId);
 
@@ -117,6 +124,15 @@ const Workspace = ({ activeTab, roleId }) => {
         return <div className="text-gray-500">You do not have access to this section.</div>;
     };
 
+    // Render requests tab content (only for roleId 1 or 2)
+    const renderAnalyticsTabContent = () => {
+        if (roleId === 1 || roleId === 2) {
+            return <Analytics />;
+        }
+        return <div className="text-gray-500">You do not have access to this section.</div>;
+    };
+
+
     return (
         <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
             {/* Top Tabs - sticky at top */}
@@ -156,6 +172,7 @@ const Workspace = ({ activeTab, roleId }) => {
                     {activeTab === "tasks" && renderTaskTabContent()}
                     {activeTab === "time" && renderTimeTabContent()}
                     {activeTab === "requests" && renderRequestsTabContent()}
+                    {activeTab === "analytics" && renderAnalyticsTabContent()}
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GrProjects, GrList, GrTask, GrDocumentTime, GrUserSettings } from "react-icons/gr";
+import { GrProjects, GrList, GrTask, GrDocumentTime, GrUserSettings, GrAnalytics } from "react-icons/gr";
 
 const tabs = [
     { label: 'Users', value: 'users', icon: <GrUserSettings size={20} /> },
@@ -7,6 +7,7 @@ const tabs = [
     { label: 'Tasks', value: 'tasks', icon: <GrList size={20} /> },
     { label: 'Time Entries', value: 'time', icon: <GrDocumentTime size={20} /> },
     { label: 'Requests', value: 'requests', icon: <GrTask size={20} /> },
+    { label: 'Analytics', value: 'analytics', icon: <GrAnalytics size={20} /> },
     // Add more tabs here as needed
 ];
 

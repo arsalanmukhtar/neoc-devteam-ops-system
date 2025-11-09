@@ -101,7 +101,7 @@ const RequestListTable = () => {
             const data = await res.json();
             if (res.ok) {
                 setSuccess("Request rejected!");
-                showNotification("success", "Request rejected!");
+                showNotification("error", "Request rejected!");
                 fetchRequests();
             } else {
                 setError(data.error || "Failed to reject request");

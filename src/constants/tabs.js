@@ -24,3 +24,13 @@ export const timeTabs = [
     // { label: 'Update Time Entry', value: 'update', api: '/api/time/update' }, // append /:id in component
     // { label: 'Delete Time Entry', value: 'delete', api: '/api/time/delete' }, // append /:id in component
 ];
+
+// Analytics Tabs
+export const analyticsTabs = [
+    { label: "Users", value: "users", api: "/api/analytics/users" },
+    { label: "Projects", value: "projects", api: "/api/analytics/projects" },
+    { label: "Tasks", value: "tasks", api: "/api/analytics/tasks" },
+    { label: "Time Entries", value: "time_entries", api: "/api/analytics/time-entries" },
+    { label: "Requests", value: "requests", api: "/api/analytics/requests" },
+    { label: "User Utilization", value: "user-utilization", api: "/api/analytics/user-utilization" },
+];

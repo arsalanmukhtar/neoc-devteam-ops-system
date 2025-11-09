@@ -98,7 +98,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                         onChange={value => setForm({ ...form, role_id: value })}
                         searchable
                         classNames={{
-                            input: 'input-border font-sans',
+                            input: 'input-border sidebar-scroll font-sans',
                             dropdown: 'font-sans',
                             item: 'font-sans'
                         }}
