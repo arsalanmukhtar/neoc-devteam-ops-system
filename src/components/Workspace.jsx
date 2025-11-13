@@ -127,7 +127,7 @@ const Workspace = ({ activeTab, roleId }) => {
     // Render requests tab content (only for roleId 1 or 2)
     const renderAnalyticsTabContent = () => {
         if (roleId === 1 || roleId === 2) {
-            return <Analytics />;
+            return <Analytics activeTab={activeTopTab} />;
         }
         return <div className="text-gray-500">You do not have access to this section.</div>;
     };

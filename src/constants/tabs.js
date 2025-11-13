@@ -30,7 +30,7 @@ export const analyticsTabs = [
     { label: "Users", value: "users", api: "/api/analytics/users" },
     { label: "Projects", value: "projects", api: "/api/analytics/projects" },
     { label: "Tasks", value: "tasks", api: "/api/analytics/tasks" },
-    { label: "Time Entries", value: "time_entries", api: "/api/analytics/time-entries" },
+    { label: "Time Entries", value: "time-entries", api: "/api/analytics/time-entries" },
     { label: "Requests", value: "requests", api: "/api/analytics/requests" },
     { label: "User Utilization", value: "user-utilization", api: "/api/analytics/user-utilization" },
 ];
