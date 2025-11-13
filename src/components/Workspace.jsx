@@ -162,17 +162,21 @@ const Workspace = ({ activeTab, roleId }) => {
                 </div>
             </div>
             {/* Scrollable Workspace Content */}
-            <div className="flex-1 overflow-y-auto sidebar-scroll p-0">
-                <div className="p-6 bg-white shadow flex flex-col justify-start w-full border-gray-300">
-                    <h3 className="text-xl font-semibold mb-4">
-                        {topTabs.find(t => t.value === activeTopTab)?.label}
-                    </h3>
-                    {activeTab === "users" && renderUserTabContent()}
-                    {activeTab === "projects" && renderProjectTabContent()}
-                    {activeTab === "tasks" && renderTaskTabContent()}
-                    {activeTab === "time" && renderTimeTabContent()}
-                    {activeTab === "requests" && renderRequestsTabContent()}
-                    {activeTab === "analytics" && renderAnalyticsTabContent()}
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll p-0">
+                <div className="h-full bg-white shadow flex flex-col justify-start w-full border-gray-300">
+                    <div className="px-4 py-3 flex-shrink-0">
+                        <h3 className="text-xl font-semibold mb-4">
+                            {topTabs.find(t => t.value === activeTopTab)?.label}
+                        </h3>
+                    </div>
+                    <div className="flex-1 min-h-0 px-6 pb-6 overflow-y-auto">
+                        {activeTab === "users" && renderUserTabContent()}
+                        {activeTab === "projects" && renderProjectTabContent()}
+                        {activeTab === "tasks" && renderTaskTabContent()}
+                        {activeTab === "time" && renderTimeTabContent()}
+                        {activeTab === "requests" && renderRequestsTabContent()}
+                        {activeTab === "analytics" && renderAnalyticsTabContent()}
+                    </div>
                 </div>
             </div>
         </div>

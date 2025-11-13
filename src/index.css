@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: 'Overpass', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* --- 1. CORE COLOR SCHEME (CSS Variables) --- */
