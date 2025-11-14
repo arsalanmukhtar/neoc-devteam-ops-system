@@ -12,9 +12,16 @@ import { IoMdClose } from "react-icons/io";
 
 const baseURL = 'http://localhost:3000';
 
+const priorityOptions = [
+    { value: "low", label: "Low" },
+    { value: "medium", label: "Medium" },
+    { value: "high", label: "High" },
+];
+
 const TimeEntryCreateForm = ({ onCreated }) => {
     const [form, setForm] = useState({
         task_id: '',
+        priority: '',
         start_time: '',
         end_time: '',
         notes: '',
@@ -37,7 +44,6 @@ const TimeEntryCreateForm = ({ onCreated }) => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         let url = baseURL + "/api/tasks/list";
-        // Only restrict by assigned_to_id if roleId === 3 (Developer)
         if (roleId === 3 && userId) {
             url += `?assigned_to_id=${userId}`;
         }
@@ -72,10 +78,6 @@ const TimeEntryCreateForm = ({ onCreated }) => {
         setForm({ ...form, [name]: value });
     };
 
-    const handleDateChange = value => {
-        setForm({ ...form, start_time: value });
-    };
-
     const handleSubmit = async e => {
         e.preventDefault();
         setLoading(true);
@@ -100,6 +102,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                 setSuccess('Time entry request submitted for approval!');
                 setForm({
                     task_id: '',
+                    priority: '',
                     start_time: '',
                     end_time: '',
                     notes: '',
@@ -143,6 +146,26 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                         size="md"
                         value={form.task_id}
                         onChange={value => handleSelectChange("task_id", value)}
+                        classNames={{
+                            input: 'input-border font-sans',
+                            dropdown: 'font-sans',
+                            item: 'font-sans'
+                        }}
+                        required
+                    />
+                </div>
+                {/* Priority dropdown full width */}
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="priority" className="label-style">Priority</label>
+                    <Select
+                        id="priority"
+                        name="priority"
+                        placeholder="Select Priority"
+                        data={priorityOptions}
+                        radius="xl"
+                        size="md"
+                        value={form.priority}
+                        onChange={value => handleSelectChange("priority", value)}
                         classNames={{
                             input: 'input-border font-sans',
                             dropdown: 'font-sans',
@@ -314,7 +337,9 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                     onClick={() => {
                         setForm({
                             task_id: '',
+                            priority: '',
                             start_time: '',
+                            end_time: '',
                             notes: '',
                         });
                         if (editor) editor.commands.setContent("");

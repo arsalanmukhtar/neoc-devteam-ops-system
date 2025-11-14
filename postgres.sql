@@ -106,6 +106,7 @@ CREATE TABLE "time_entries" (
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
+    priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
     -- Duration will be calculated, but storing it is often helpful for reports
     duration DECIMAL(10, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) STORED,
     notes TEXT,

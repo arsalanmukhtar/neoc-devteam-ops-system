@@ -5,7 +5,7 @@ import { pool } from "../server.js";
 // --- Create Time Entry Logic ---
 export const createTimeEntry = async (req, res) => {
   const user_id = req.user.user_id;
-  const { task_id, start_time, end_time, notes } = req.body;
+  const { task_id, start_time, end_time, notes, priority } = req.body;
 
   if (!task_id || !start_time || !end_time) {
     return res
@@ -21,10 +21,10 @@ export const createTimeEntry = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING entry_id, task_id, start_time, end_time, duration`,
-      [user_id, task_id, start_time, end_time, notes]
+      `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING entry_id, task_id, start_time, end_time, duration, priority`,
+      [user_id, task_id, start_time, end_time, notes, priority]
     );
 
     res.status(201).json({
@@ -52,6 +52,7 @@ export const getAllTimeEntries = async (req, res) => {
       te.end_time, 
       te.duration, 
       te.notes, 
+      te.priority,
       te.created_at,
       u.first_name AS user_first_name,
       u.last_name AS user_last_name
@@ -104,24 +105,23 @@ export const getAllTimeEntries = async (req, res) => {
 export const updateTimeEntry = async (req, res) => {
   const { id } = req.params;
   const user_id = req.user.user_id;
-  let { task_id, start_time, end_time, notes } = req.body;
+  let { task_id, start_time, end_time, notes, priority } = req.body;
 
   // If only end_time or notes are sent, fetch the rest from DB
   if (!task_id || !start_time) {
     const result = await pool.query(
-      `SELECT task_id, start_time FROM time_entries WHERE entry_id = $1 AND user_id = $2`,
+      `SELECT task_id, start_time, priority FROM time_entries WHERE entry_id = $1 AND user_id = $2`,
       [id, user_id]
     );
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Time entry not found or you do not have permission to update it.",
-        });
+      return res.status(404).json({
+        error:
+          "Time entry not found or you do not have permission to update it.",
+      });
     }
     task_id = result.rows[0].task_id;
     start_time = result.rows[0].start_time;
+    if (!priority) priority = result.rows[0].priority;
   }
 
   if (!task_id || !start_time || !end_time) {
@@ -133,10 +133,10 @@ export const updateTimeEntry = async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE time_entries 
-             SET task_id = $1, start_time = $2, end_time = $3, notes = $4
-             WHERE entry_id = $5 AND user_id = $6
-             RETURNING entry_id, task_id, duration, notes`,
-      [task_id, start_time, end_time, notes, id, user_id]
+             SET task_id = $1, start_time = $2, end_time = $3, notes = $4, priority = $5
+             WHERE entry_id = $6 AND user_id = $7
+             RETURNING entry_id, task_id, duration, notes, priority`,
+      [task_id, start_time, end_time, notes, priority, id, user_id]
     );
 
     if (result.rows.length === 0) {
@@ -172,12 +172,10 @@ export const deleteTimeEntry = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res
-        .status(404)
-        .json({
-          error:
-            "Time entry not found or you do not have permission to delete it.",
-        });
+      return res.status(404).json({
+        error:
+          "Time entry not found or you do not have permission to delete it.",
+      });
     }
 
     res.status(204).send();
