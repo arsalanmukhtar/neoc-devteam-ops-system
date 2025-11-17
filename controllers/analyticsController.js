@@ -20,9 +20,10 @@ export const userCountByRole = async (req, res) => {
 export const activeInactiveUsers = async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT is_active, COUNT(*) AS total_users
-            FROM users
-            GROUP BY is_active;
+            SELECT 
+                COUNT(*) FILTER (WHERE is_active = TRUE) AS active,
+                COUNT(*) FILTER (WHERE is_active = FALSE) AS inactive
+            FROM users;
         `);
         res.json(result.rows);
     } catch (err) {
@@ -33,10 +34,12 @@ export const activeInactiveUsers = async (req, res) => {
 export const usersCreatedPerMonth = async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS new_users
+            SELECT 
+                TO_CHAR(DATE_TRUNC('month', created_at), 'MON YYYY') AS month,
+                COUNT(*) AS new_users
             FROM users
-            GROUP BY month
-            ORDER BY month;
+            GROUP BY DATE_TRUNC('month', created_at)
+            ORDER BY DATE_TRUNC('month', created_at);
         `);
         res.json(result.rows);
     } catch (err) {

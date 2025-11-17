@@ -187,9 +187,10 @@ GROUP BY r.role_name
 ORDER BY user_count DESC;
 
 -- A2: Count active vs inactive users
-SELECT is_active, COUNT(*) AS total_users
-FROM users
-GROUP BY is_active;
+SELECT 
+    COUNT(*) FILTER (WHERE is_active = TRUE) AS active,
+    COUNT(*) FILTER (WHERE is_active = FALSE) AS inactive
+FROM users;
 
 -- A3: Users created per month (trend)
 SELECT DATE_TRUNC('month', created_at) AS month, COUNT(*) AS new_users

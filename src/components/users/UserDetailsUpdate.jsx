@@ -147,7 +147,7 @@ const UserDetailsUpdate = ({ api }) => {
                                 type="text"
                                 id="first_name"
                                 name="first_name"
-                                className="border border-gray-300 rounded-full px-4 py-2"
+                                className="input-border"
                                 required
                                 value={form.first_name}
                                 onChange={handleChange}
@@ -159,7 +159,7 @@ const UserDetailsUpdate = ({ api }) => {
                                 type="text"
                                 id="last_name"
                                 name="last_name"
-                                className="border border-gray-300 rounded-full px-4 py-2"
+                                className="input-border"
                                 required
                                 value={form.last_name}
                                 onChange={handleChange}
@@ -171,7 +171,7 @@ const UserDetailsUpdate = ({ api }) => {
                                 type="email"
                                 id="email"
                                 name="email"
-                                className="border border-gray-300 rounded-full px-4 py-2 bg-gray-100 cursor-not-allowed"
+                                className="input-border bg-gray-100 cursor-not-allowed"
                                 required
                                 value={form.email}
                                 readOnly
@@ -185,7 +185,7 @@ const UserDetailsUpdate = ({ api }) => {
                                 type="password"
                                 id="password"
                                 name="password"
-                                className="border border-gray-300 rounded-full px-4 py-2"
+                                className="input-border"
                                 value={form.password}
                                 onChange={handleChange}
                                 placeholder="Leave blank to keep unchanged"

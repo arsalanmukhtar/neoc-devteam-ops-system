@@ -59,7 +59,6 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
         })
             .then(res => res.json())
             .then(data => {
-                console.log("Fetched tasks:", data);
                 setTasks(Array.isArray(data) ? data : []);
                 setLoading(false);
             });

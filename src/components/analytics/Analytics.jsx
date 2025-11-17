@@ -30,18 +30,8 @@ ChartJS.register(
 // Enhanced color palette for better visibility
 const COLORS = {
     palette: [
-        "#3b82f6", // blue
-        "#10b981", // emerald
-        "#f59e0b", // amber
-        "#ef4444", // red
-        "#8b5cf6", // violet
-        "#06b6d4", // cyan
-        "#ec4899", // pink
-        "#14b8a6", // teal
-        "#f97316", // orange
-        "#6366f1", // indigo
-        "#84cc16", // lime
-        "#d946ef"  // fuchsia
+        "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4",
+        "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16", "#d946ef"
     ]
 };
 
@@ -53,9 +43,9 @@ const Analytics = ({ activeTab }) => {
 
     const apiEndpoints = {
         users: [
-            { key: "userCountByRole", endpoint: "/api/analytics/user-count-by-role", label: "User Count by Role", type: "bar" },
-            { key: "activeInactiveUsers", endpoint: "/api/analytics/active-inactive-users", label: "Active vs Inactive Users", type: "pie" },
-            { key: "usersCreatedPerMonth", endpoint: "/api/analytics/users-created-per-month", label: "Users Created per Month", type: "line" }
+            { key: "userCountByRole", endpoint: "/api/analytics/user-count-by-role", label: "User Count by Role", type: "bar", yLabel: "Role" },
+            { key: "activeInactiveUsers", endpoint: "/api/analytics/active-inactive-users", label: "Active vs Inactive Users", type: "pie", yLabel: "Status" },
+            { key: "usersCreatedPerMonth", endpoint: "/api/analytics/users-created-per-month", label: "Users Created per Month", type: "line", yLabel: "Month" }
         ],
         projects: [
             { key: "projectsByStatus", endpoint: "/api/analytics/projects-by-status", label: "Projects by Status", type: "pie" },
@@ -119,7 +109,180 @@ const Analytics = ({ activeTab }) => {
 
                 if (res.ok) {
                     const data = await res.json();
-                    newChartsData[chart.key] = Array.isArray(data) ? data : [];
+
+                    // Custom transformation for each chart key
+                    switch (chart.key) {
+                        case "activeInactiveUsers":
+                            if (Array.isArray(data) && data.length === 1) {
+                                const row = data[0];
+                                newChartsData[chart.key] = [
+                                    { label: "Active", value: row.active },
+                                    { label: "Inactive", value: row.inactive }
+                                ];
+                            } else {
+                                newChartsData[chart.key] = Array.isArray(data) ? data : [];
+                            }
+                            break;
+                        case "userCountByRole":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.role_name,
+                                    value: row.user_count
+                                }))
+                                : [];
+                            break;
+                        case "usersCreatedPerMonth":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.month,
+                                    value: row.new_users
+                                }))
+                                : [];
+                            break;
+                        case "projectsByStatus":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.status,
+                                    value: row.project_count
+                                }))
+                                : [];
+                            break;
+                        case "projectsPerManager":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.manager_name,
+                                    value: row.project_count
+                                }))
+                                : [];
+                            break;
+                        case "projectsCreatedPerMonth":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.month,
+                                    value: row.total_projects
+                                }))
+                                : [];
+                            break;
+                        case "taskDistributionByStatus":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.status,
+                                    value: row.count
+                                }))
+                                : [];
+                            break;
+                        case "taskDistributionByPriority":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.priority,
+                                    value: row.count
+                                }))
+                                : [];
+                            break;
+                        case "tasksAssignedToUsers":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.user_name,
+                                    value: row.task_count
+                                }))
+                                : [];
+                            break;
+                        case "tasksPerProject":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.project_name,
+                                    value: row.task_count
+                                }))
+                                : [];
+                            break;
+                        case "hoursLoggedPerUser":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.user_name,
+                                    value: row.hours
+                                }))
+                                : [];
+                            break;
+                        case "hoursLoggedPerProject":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.project_name,
+                                    value: row.hours
+                                }))
+                                : [];
+                            break;
+                        case "timeSpentPerTask":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.task_title,
+                                    value: row.hours
+                                }))
+                                : [];
+                            break;
+                        case "dailyActivityTrend":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.date,
+                                    value: row.hours
+                                }))
+                                : [];
+                            break;
+                        case "requestsCountByStatus":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.status,
+                                    value: row.count
+                                }))
+                                : [];
+                            break;
+                        case "requestsPerUser":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.user_name,
+                                    value: row.count
+                                }))
+                                : [];
+                            break;
+                        case "requestProcessingTime":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.request_id,
+                                    value: row.hours
+                                }))
+                                : [];
+                            break;
+                        case "dailyRequestsOverTime":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.date,
+                                    value: row.count
+                                }))
+                                : [];
+                            break;
+                        // User Utilization keys
+                        case "underUtilizedMembers":
+                        case "overUtilizedMembers":
+                        case "neglectedTasksMembers":
+                        case "mostlyLowPriorityMembers":
+                        case "urgentTaskCandidates":
+                        case "highestCompletionRateMembers":
+                        case "idleUsers":
+                        case "tooManyHighPriorityMembers":
+                        case "avgHoursPerTask":
+                        case "delayingRequestsMembers":
+                        case "urgentRequestsHandledMembers":
+                        case "workloadHeatmap":
+                            newChartsData[chart.key] = Array.isArray(data)
+                                ? data.map(row => ({
+                                    label: row.user_name || row.label || row.name || row.member_name || row.project_name || row.task_title || row.date || row.status || row.priority || row.request_id,
+                                    value: row.value || row.count || row.hours || row.task_count || row.project_count || row.new_users || row.total_projects
+                                }))
+                                : [];
+                            break;
+                        default:
+                            newChartsData[chart.key] = Array.isArray(data) ? data : [];
+                            break;
+                    }
                 } else {
                     newChartsData[chart.key] = [];
                 }
@@ -133,18 +296,15 @@ const Analytics = ({ activeTab }) => {
         setLoading(false);
     };
 
-    // Helper: Convert raw data to ChartJS Bar Chart format with enhanced styling
-    const prepareBarChartData = (data) => {
+    const prepareBarChartData = (data, yLabel) => {
         if (!data || data.length === 0) return null;
-
-        const labels = data.map(item => Object.values(item)[0]);
-        const values = data.map(item => Object.values(item)[1]);
-
+        const labels = data.map(item => item.label);
+        const values = data.map(item => item.value);
         return {
             labels,
             datasets: [
                 {
-                    label: "Count",
+                    label: yLabel,
                     data: values,
                     backgroundColor: COLORS.palette.map((color, idx) => idx < labels.length ? color : COLORS.palette[idx % COLORS.palette.length]),
                     borderColor: COLORS.palette.map((color, idx) => idx < labels.length ? color : COLORS.palette[idx % COLORS.palette.length]),
@@ -160,19 +320,17 @@ const Analytics = ({ activeTab }) => {
         };
     };
 
-    // Helper: Convert raw data to ChartJS Pie Chart format with enhanced styling
-    const preparePieChartData = (data) => {
+    const preparePieChartData = (data, yLabel) => {
         if (!data || data.length === 0) return null;
-
-        const labels = data.map(item => Object.values(item)[0]);
-        const values = data.map(item => Object.values(item)[1]);
+        const labels = data.map(item => item.label);
+        const values = data.map(item => item.value);
         const total = values.reduce((sum, val) => sum + val, 0);
         const percentages = values.map(val => ((val / total) * 100).toFixed(1));
-
         return {
             labels: labels.map((label, idx) => `${label} • ${percentages[idx]}%`),
             datasets: [
-                {
+                {   
+                    label: yLabel,
                     data: percentages,
                     backgroundColor: COLORS.palette.slice(0, labels.length),
                     borderColor: "#ffffff",
@@ -184,18 +342,15 @@ const Analytics = ({ activeTab }) => {
         };
     };
 
-    // Helper: Convert raw data to ChartJS Line Chart format with enhanced styling
-    const prepareLineChartData = (data) => {
+    const prepareLineChartData = (data, yLabel) => {
         if (!data || data.length === 0) return null;
-
-        const labels = data.map(item => Object.values(item)[0]);
-        const values = data.map(item => Object.values(item)[1]);
-
+        const labels = data.map(item => item.label);
+        const values = data.map(item => item.value);
         return {
             labels,
             datasets: [
                 {
-                    label: "Value",
+                    label: yLabel,
                     data: values,
                     borderColor: COLORS.palette[0],
                     backgroundColor: `${COLORS.palette[0]}15`,
@@ -213,8 +368,7 @@ const Analytics = ({ activeTab }) => {
         };
     };
 
-    // Helper: Render appropriate chart based on type
-    const renderChart = (data, type, label) => {
+    const renderChart = (data, type, label, yLabel) => {
         if (!data || data.length === 0) {
             return (
                 <div className="w-full h-full flex items-center justify-center">
@@ -222,104 +376,111 @@ const Analytics = ({ activeTab }) => {
                 </div>
             );
         }
-
-        // Enhanced chart options with better styling
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
+                    display: true,
                     position: "bottom",
                     labels: {
-                        font: { size: 11, weight: 500, family: "'Poppins', sans-serif" },
-                        padding: 16,
+                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold legend labels
+                        color: "#374151",
                         usePointStyle: true,
                         pointStyle: "circle",
-                        color: "#4b5563",
-                        generateLabels: (chart) => {
-                            const datasets = chart.data.datasets;
-                            const labels = chart.data.labels;
-                            return labels.map((label, i) => ({
-                                text: label,
-                                fillStyle: datasets[0].backgroundColor[i] || datasets[0].borderColor,
-                                hidden: false,
-                                index: i
-                            }));
-                        }
+                        padding: 20,
+                        boxWidth: 18,
+                        boxHeight: 18,
                     }
                 },
                 tooltip: {
-                    backgroundColor: "rgba(0, 0, 0, 0.85)",
-                    padding: 12,
-                    titleFont: { size: 13, weight: 600, family: "'Poppins', sans-serif" },
-                    bodyFont: { size: 12, family: "'Poppins', sans-serif" },
-                    borderColor: "rgba(255, 255, 255, 0.3)",
-                    borderWidth: 1,
-                    displayColors: true,
-                    callbacks: {
-                        label: function (context) {
-                            if (context.dataset.label) {
-                                return `${context.dataset.label}: ${context.parsed.y || context.parsed}`;
-                            }
-                            return `${context.parsed.y || context.parsed}`;
-                        }
-                    }
+                    backgroundColor: "#222", // Tooltip background
+                    titleColor: "#fff",      // Title text color
+                    bodyColor: "#e0e7ef",    // Body text color
+                    borderColor: "#6366f1",  // Border color
+                    borderWidth: 2,          // Border width
+                    padding: 16,             // Padding inside tooltip
+                    cornerRadius: 8,         // Rounded corners
+                    titleFont: { size: 15, weight: 700, family: "'Poppins', sans-serif" },
+                    bodyFont: { size: 13, family: "'Poppins', sans-serif" },
+                    displayColors: true,     // Show color box for dataset
+                    boxPadding: 8,           // Padding around color box
+                    caretSize: 8,            // Size of caret/arrow
                 },
-                title: {
-                    display: false
-                }
             },
             scales: type !== "pie" ? {
                 x: {
+                    offset: true,
                     ticks: {
-                        font: { size: 13, weight: 500, family: "'Poppins', sans-serif" },
+                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold x axis labels
                         color: "#374151",
                         maxRotation: 45,
                         minRotation: 0,
-                        padding: 8
+                        padding: 16,
+                        align: "center",
                     },
                     grid: {
-                        color: "rgba(0, 0, 0, 0.08)",
+                        color: (ctx) => ctx.index === 0 ? "#f3f4f6" : "#fafafa", // very light gray for primary, lighter for secondary
+                        borderColor: "#d1d5db", // softer gray for axis border
                         drawBorder: true,
-                        borderColor: "rgba(0, 0, 0, 0.1)"
+                        lineWidth: (ctx) => ctx.index === 0 ? 2 : 1,
+                        drawOnChartArea: true,
+                        drawTicks: false
+                    },
+                    border: {
+                        display: true,
+                        color: "#d1d5db", // softer gray
+                        width: 2
                     }
                 },
                 y: {
+                    min: 0,
+                    title: {
+                        display: true,
+                        text: "Count", // <-- This will show "Count" as the y-axis title
+                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" },
+                        color: "#374151",
+                        padding: { bottom: 10 }
+                    },
                     ticks: {
-                        font: { size: 13, weight: 500, family: "'Poppins', sans-serif" },
+                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold y axis labels
                         color: "#374151",
                         padding: 8
                     },
                     grid: {
-                        color: "rgba(0, 0, 0, 0.08)",
+                        color: (ctx) => ctx.index === 0 ? "#f3f4f6" : "#fafafa",
+                        borderColor: "#d1d5db",
                         drawBorder: true,
-                        borderColor: "rgba(0, 0, 0, 0.1)"
+                        lineWidth: (ctx) => ctx.index === 0 ? 2 : 1,
+                        drawOnChartArea: true,
+                        drawTicks: false
+                    },
+                    border: {
+                        display: true,
+                        color: "#d1d5db",
+                        width: 2
                     }
                 }
             } : undefined
         };
 
         if (type === "bar") {
-            const chartData = prepareBarChartData(data);
+            const chartData = prepareBarChartData(data, yLabel);
             return chartData ? (
-                <Bar data={chartData} options={{ ...chartOptions, indexAxis: "y" }} />
+                <Bar data={chartData} options={chartOptions} />
             ) : null;
         }
-
         if (type === "pie") {
-            const chartData = preparePieChartData(data);
+            const chartData = preparePieChartData(data, yLabel);
             return chartData ? <Pie data={chartData} options={chartOptions} /> : null;
         }
-
         if (type === "line") {
-            const chartData = prepareLineChartData(data);
+            const chartData = prepareLineChartData(data, yLabel);
             return chartData ? <Line data={chartData} options={chartOptions} /> : null;
         }
-
         return null;
     };
 
-    // Helper: Get grid layout configuration
     const getGridLayout = () => {
         if (activeTab === "users") {
             return {
@@ -332,7 +493,6 @@ const Analytics = ({ activeTab }) => {
                 ]
             };
         }
-
         const endpoints = apiEndpoints[activeTab] || [];
         return {
             cols: "grid-cols-3",
@@ -373,7 +533,6 @@ const Analytics = ({ activeTab }) => {
                     <p className="text-red-700 font-semibold text-sm" style={{ fontFamily: "'Poppins', sans-serif" }}>{error}</p>
                 </div>
             )}
-
             {loading ? (
                 <div className="flex items-center justify-center flex-1">
                     <div className="text-center">
@@ -386,11 +545,9 @@ const Analytics = ({ activeTab }) => {
                     {layout.items.map((item) => {
                         const endpoint = endpoints.find(ep => ep.key === item.key);
                         if (!endpoint) return null;
-
                         return (
                             <div key={endpoint.key} className={`${item.span} min-h-0 flex flex-col`}>
                                 <div className="h-full bg-white p-5 rounded-lg shadow-md border border-gray-200 relative group hover:shadow-lg transition-shadow flex flex-col">
-                                    {/* Expand Button */}
                                     <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition z-10">
                                         <button
                                             onClick={() => setExpandedChart(endpoint)}
@@ -400,16 +557,12 @@ const Analytics = ({ activeTab }) => {
                                             <BiExpand size={22} className="text-blue-600" />
                                         </button>
                                     </div>
-
-                                    {/* Chart Title with enhanced styling */}
                                     <div className="flex-shrink-0 mb-3 pr-10">
                                         <h4 className="text-base font-semibold text-gray-800" style={{ fontFamily: "'Poppins', sans-serif" }}>{endpoint.label}</h4>
                                         <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
                                     </div>
-
-                                    {/* Chart Container */}
                                     <div className="flex-1 min-h-0 relative w-full">
-                                        {renderChart(chartsData[endpoint.key], endpoint.type, endpoint.label)}
+                                        {renderChart(chartsData[endpoint.key], endpoint.type, endpoint.label, endpoint.yLabel)}
                                     </div>
                                 </div>
                             </div>
