@@ -138,6 +138,7 @@ CREATE TABLE "requests" (
     priority VARCHAR(50) NOT NULL DEFAULT 'Medium'
 );
 
+-- ALTER TABLE "requests" ADD COLUMN entry_id UUID REFERENCES "time_entries"(entry_id);
 
 -- Index for quick access
 CREATE INDEX idx_requests_status ON "requests" (status);
