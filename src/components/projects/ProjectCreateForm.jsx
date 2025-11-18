@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import NotificationAlert from "../NotificationAlert";
-
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
-
 import { Select } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates"; // ✅ correct mantine v6 import
+import { DatePickerInput } from "@mantine/dates";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Underline from "@tiptap/extension-underline";
 import BulletList from '@tiptap/extension-bullet-list';
@@ -19,11 +17,20 @@ import Highlight from '@tiptap/extension-highlight';
 
 const baseURL = "http://localhost:3000";
 
-const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "completed", label: "Completed" },
-];
+// Status mapping and colors
+const statusOptions = {
+    active: { label: 'Active', color: '#2563eb' },        // blue
+    inactive: { label: 'Inactive', color: '#ef4444' },    // red
+    in_progress: { label: 'In Progress', color: '#f59e0b' }, // amber
+    planning: { label: 'Planning', color: '#06b6d4' },    // cyan
+    completed: { label: 'Completed', color: '#22c55e' },  // green
+};
+
+// Convert statusOptions to array for Select
+const statusSelectOptions = Object.entries(statusOptions).map(([value, { label }]) => ({
+    value,
+    label,
+}));
 
 const ProjectCreateForm = ({ api = [], onCreated }) => {
     const [form, setForm] = useState({
@@ -35,15 +42,12 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         due_date: "",
     });
 
-    const [managers, setManagers] = useState([]); // <-- Add this state
+    const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-
-    // Add a ref for the color input
     const colorInputRef = useRef();
 
-    // Fetch managers on mount
     useEffect(() => {
         const token = localStorage.getItem("token");
         fetch("http://localhost:3000/api/users/all", {
@@ -54,7 +58,6 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         })
             .then((res) => res.json())
             .then((data) => {
-                // Filter users with role_id === 2
                 const projectManagers = Array.isArray(data)
                     ? data.filter((user) => user.role_id === 2)
                     : [];
@@ -72,15 +75,9 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         }
     }, [success, error]);
 
-    // ✅ TipTap editor
     const editor = useEditor({
         extensions: [
             StarterKit,
-            // Underline,
-            // BulletList,
-            // OrderedList,
-            // ListItem,
-            // Blockquote,
             Color,
             TextStyle,
             Highlight
@@ -144,6 +141,13 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         setLoading(false);
     };
 
+    // Custom item renderer for colored status options
+    const StatusItem = React.forwardRef(({ value, label, ...others }, ref) => (
+        <div ref={ref} {...others} style={{ color: statusOptions[value]?.color }}>
+            {label}
+        </div>
+    ));
+
     return (
         <form
             className="w-full max-w-2xl mx-auto flex flex-col gap-6 font-sans"
@@ -162,11 +166,9 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                 />
             </div>
 
-            {/* ✅ TipTap Rich Text Editor */}
+            {/* TipTap Rich Text Editor */}
             <div className="flex flex-col gap-2">
                 <label className="label-style">Description</label>
-
-                {/* Toolbar */}
                 <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
                     <button
                         type="button"
@@ -297,8 +299,6 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                         <IoMdClose size={18} color="#555" />
                     </button>
                 </div>
-
-                {/* Content Box */}
                 <div className="sidebar-scroll border border-gray-300 p-3 min-h-[150px] h-96 bg-white overflow-y-auto">
                     <EditorContent editor={editor} className="tiptap" />
                 </div>
@@ -332,7 +332,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                 <label className="label-style">Status</label>
                 <Select
                     placeholder="Select Status"
-                    data={statusOptions}
+                    data={statusSelectOptions}
                     value={form.status}
                     onChange={(value) => handleSelectChange("status", value)}
                     searchable
@@ -344,11 +344,16 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                     radius="xl"
                     size="md"
                     required
-                    
+                    itemComponent={StatusItem}
+                    styles={{
+                        input: {
+                            color: form.status ? statusOptions[form.status]?.color : undefined
+                        }
+                    }}
                 />
             </div>
 
-            {/* ✅ DATES SIDE BY SIDE */}
+            {/* DATES SIDE BY SIDE */}
             <div className="flex gap-4 w-full">
                 <div className="flex flex-col w-1/2">
                     <label className="label-style">Start Date</label>
@@ -366,7 +371,6 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                         required
                     />
                 </div>
-
                 <div className="flex flex-col w-1/2">
                     <label className="label-style">Due Date</label>
                     <DatePickerInput

@@ -13,6 +13,12 @@ import { IoMdClose } from "react-icons/io";
 
 const baseURL = 'http://localhost:3000';
 
+const priorityColors = {
+    low: "#60a5fa",      // blue
+    medium: "#eca900",   // yellow
+    high: "#ef4444"      // red
+};
+
 const TimeEntryListTable = ({ api = "/api/time/list" }) => {
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,6 +57,13 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
             });
     }, [api, roleId, userId]);
 
+    // Only allow editing if the current user is the creator (roleId === 3 and userId matches entry.user_id)
+    const canEditEntry = (entry) => {
+        if (!entry) return false;
+        console.log('roleId:', roleId, 'userId:', userId, 'entry.user_id:', entry.user_id);
+        return roleId === 3 && String(userId) === String(entry.user_id);
+    };
+
     const columns = useMemo(
         () => [
             {
@@ -61,20 +74,47 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                     <span
                         style={{
                             color: '#2563eb',
-                            cursor: 'pointer',
+                            cursor: canEditEntry(row.original) ? 'pointer' : 'not-allowed',
                             fontWeight: 500,
                             transition: 'color 0.2s',
+                            opacity: canEditEntry(row.original) ? 1 : 0.5
                         }}
                         onClick={() => {
-                            setSelectedEntry(row.original);
-                            setModalEndTime(row.original.end_time ? new Date(row.original.end_time) : null);
-                            setModalNotes(''); // Always empty notes on open
-                            setModalOpened(true);
+                            if (canEditEntry(row.original)) {
+                                setSelectedEntry(row.original);
+                                setModalEndTime(row.original.end_time ? new Date(row.original.end_time) : null);
+                                setModalNotes('');
+                                setModalOpened(true);
+                            }
                         }}
                     >
                         {row.original.task_title || '-'}
                     </span>
                 ),
+            },
+            {
+                accessorKey: 'priority',
+                header: 'Priority',
+                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
+                Cell: ({ cell }) => {
+                    const value = cell.getValue();
+                    const color = priorityColors[value?.toLowerCase()] || "#aaa";
+                    const label = value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
+                    return (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{
+                                display: 'inline-block',
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                                background: color,
+                                marginRight: '6px',
+                                border: '1px solid #ccc'
+                            }} />
+                            <span style={{ color, fontWeight: 500 }}>{label}</span>
+                        </span>
+                    );
+                }
             },
             {
                 accessorKey: 'user_name',
@@ -131,7 +171,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 Cell: ({ cell }) => <span>{cell.getValue() || '-'}</span>,
             },
         ],
-        []
+        [roleId, userId]
     );
 
     const table = useMantineReactTable({
@@ -166,7 +206,6 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         },
     });
 
-    // Editor for notes in modal (editable, same config as create form)
     const notesEditor = useEditor({
         extensions: [
             StarterKit,
@@ -180,10 +219,9 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
 
     useEffect(() => {
         if (notesEditor && modalOpened) {
-            notesEditor.commands.setContent(""); // Always empty notes on open
+            notesEditor.commands.setContent("");
             setModalNotes("");
         }
-        // eslint-disable-next-line
     }, [modalOpened]);
 
     useEffect(() => {
@@ -196,10 +234,12 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         }
     }, [success, error]);
 
-    // Handle updating the time entry
     const handleUpdateEntry = async () => {
         if (!selectedEntry) return;
-        // Check if notes are empty (TipTap empty HTML is <p></p>)
+        if (!canEditEntry(selectedEntry)) {
+            setError("You are not authorized to edit this entry.");
+            return;
+        }
         if (!modalNotes || modalNotes.trim() === "" || modalNotes === "<p></p>") {
             setError("Notes cannot be empty.");
             return;
@@ -209,32 +249,34 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         setSuccess('');
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`${baseURL}/api/time/update/${selectedEntry.entry_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    task_id: selectedEntry.task_id,
-                    start_time: selectedEntry.start_time,
-                    end_time: modalEndTime instanceof Date ? modalEndTime.toISOString() : modalEndTime,
-                    notes: modalNotes,
-                }),
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setEntries(entries =>
-                    entries.map(e =>
-                        e.entry_id === selectedEntry.entry_id
-                            ? { ...e, end_time: modalEndTime, notes: modalNotes }
-                            : e
-                    )
-                );
-                setSuccess('Time entry updated successfully!');
-                setModalOpened(false);
+            // Only allow update if creator is editing their own entry
+            if (roleId === 3 && userId === selectedEntry.user_id) {
+                const res = await fetch(`${baseURL}/api/requests/request/time-entry`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entry_id: selectedEntry.entry_id,
+                        task_id: selectedEntry.task_id,
+                        start_time: selectedEntry.start_time,
+                        end_time: modalEndTime instanceof Date ? modalEndTime.toISOString() : modalEndTime,
+                        notes: modalNotes,
+                        user_id: userId,
+                    }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setSuccess('Update request submitted for approval!');
+                    setTimeout(() => {
+                        setModalOpened(false);
+                    }, 3000);
+                } else {
+                    setError(data.error || "Request failed");
+                }
             } else {
-                setError(data.error || "Update failed");
+                setError("You are not authorized to edit this entry.");
             }
         } catch {
             setError("Network error");
@@ -276,12 +318,36 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
             >
                 {selectedEntry && (
                     <div className="p-4 bg-white rounded-lg shadow space-y-6">
-                        {/* Task Title */}
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Task Title</span>
                             <span className="text-lg font-bold text-blue-400">{selectedEntry.task_title || '-'}</span>
                         </div>
-                        {/* User */}
+                        <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Priority</span>
+                            <span style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}>
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: '12px',
+                                    height: '12px',
+                                    borderRadius: '50%',
+                                    background: priorityColors[selectedEntry.priority?.toLowerCase()] || "#aaa",
+                                    marginRight: '6px',
+                                    border: '1px solid #ccc'
+                                }} />
+                                <span style={{
+                                    color: priorityColors[selectedEntry.priority?.toLowerCase()] || "#aaa",
+                                    fontWeight: 500
+                                }}>
+                                    {selectedEntry.priority
+                                        ? selectedEntry.priority.charAt(0).toUpperCase() + selectedEntry.priority.slice(1)
+                                        : "-"}
+                                </span>
+                            </span>
+                        </div>
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">User</span>
                             <span className="text-base text-gray-700">
@@ -290,7 +356,6 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                                     : '-'}
                             </span>
                         </div>
-                        {/* Start Time & End Time side by side */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Time</span>
@@ -312,7 +377,6 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                                 />
                             </div>
                         </div>
-                        {/* Duration & Created At side by side */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Duration (hr)</span>
@@ -323,10 +387,8 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                                 <span className="text-base text-gray-700">{selectedEntry.created_at || '-'}</span>
                             </div>
                         </div>
-                        {/* Notes */}
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Notes</span>
-                            {/* Editable TipTap Editor with toolbar */}
                             <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
                                 <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBold().run()} disabled={!notesEditor}><b>B</b></button>
                                 <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleItalic().run()} disabled={!notesEditor}><i>I</i></button>
@@ -454,6 +516,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                                 className="w-40 rounded-full"
                                 loading={saveLoading}
                                 onClick={handleUpdateEntry}
+                                disabled={!canEditEntry(selectedEntry)}
                             >
                                 Update Entry
                             </Button>

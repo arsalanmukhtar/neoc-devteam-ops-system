@@ -13,9 +13,9 @@ import { IoMdClose } from "react-icons/io";
 const baseURL = 'http://localhost:3000';
 
 const priorityOptions = [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
+    { value: "low", label: "Low", color: "#60a5fa" },      // blue
+    { value: "medium", label: "Medium", color: "#eca900" }, // yellow
+    { value: "high", label: "High", color: "#ef4444" },     // red
 ];
 
 const TimeEntryCreateForm = ({ onCreated }) => {
@@ -161,7 +161,27 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                         id="priority"
                         name="priority"
                         placeholder="Select Priority"
-                        data={priorityOptions}
+                        data={priorityOptions.map(opt => ({
+                            value: opt.value,
+                            label: (
+                                <span style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}>
+                                    <span style={{
+                                        display: 'inline-block',
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        background: opt.color,
+                                        marginRight: '6px',
+                                        border: '1px solid #ccc'
+                                    }} />
+                                    <span style={{ color: opt.color, fontWeight: 500 }}>{opt.label}</span>
+                                </span>
+                            )
+                        }))}
                         radius="xl"
                         size="md"
                         value={form.priority}

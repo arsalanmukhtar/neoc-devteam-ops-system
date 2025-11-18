@@ -1,20 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { GoThumbsup, GoThumbsdown } from "react-icons/go";
+import { MdFeedback } from "react-icons/md";
 import { Modal, Button, Select } from "@mantine/core";
 import NotificationAlert from "../NotificationAlert";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Color from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Highlight from '@tiptap/extension-highlight';
 
 const baseURL = "http://localhost:3000";
 
 const priorityOptions = [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
+    { value: "low", label: "Low", color: "#60a5fa" },
+    { value: "medium", label: "Medium", color: "#eca900" },
+    { value: "high", label: "High", color: "#ef4444" },
 ];
 
 const priorityColors = {
-    high: 'text-red-600 font-semibold',
-    medium: 'text-yellow-600 font-semibold',
-    low: 'text-green-600 font-semibold',
+    low: "#60a5fa",
+    medium: "#eca900",
+    high: "#ef4444",
 };
 
 // Helper to calculate duration in hours
@@ -33,6 +39,22 @@ const renderNotes = (notes) => {
     return <div dangerouslySetInnerHTML={{ __html: notes }} />;
 };
 
+// Custom item renderer for Mantine Select
+const PriorityItem = React.forwardRef(({ label, color, ...others }, ref) => (
+    <div ref={ref} {...others} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{
+            display: 'inline-block',
+            width: '12px',
+            height: '12px',
+            borderRadius: '50%',
+            background: color,
+            marginRight: '6px',
+            border: '1px solid #ccc'
+        }} />
+        <span style={{ color, fontWeight: 500 }}>{label}</span>
+    </div>
+));
+
 const RequestListTable = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +67,56 @@ const RequestListTable = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [modalPriority, setModalPriority] = useState("");
     const [savePriorityLoading, setSavePriorityLoading] = useState(false);
+    const [feedbackModalOpened, setFeedbackModalOpened] = useState(false);
+    const [feedbackRequest, setFeedbackRequest] = useState(null);
+    const [feedbackNotes, setFeedbackNotes] = useState("");
+    const [feedbackLoading, setFeedbackLoading] = useState(false);
+    const [notesModalOpened, setNotesModalOpened] = useState(false);
+    const [notesModalContent, setNotesModalContent] = useState("");
+
+
+    const feedbackEditor = useEditor({
+        extensions: [StarterKit, Color, TextStyle, Highlight],
+        content: feedbackNotes,
+        onUpdate: ({ editor }) => setFeedbackNotes(editor.getHTML()),
+    });
+
+    const handleOpenFeedbackModal = (request) => {
+        setFeedbackRequest(request);
+        setFeedbackNotes("");
+        setFeedbackModalOpened(true);
+        if (feedbackEditor) feedbackEditor.commands.setContent("");
+    };
+
+    const handleSendFeedback = async (approved) => {
+        if (!feedbackRequest) return;
+        setFeedbackLoading(true);
+        const token = localStorage.getItem("token");
+        try {
+            const res = await fetch(`${baseURL}/api/requests/time-entry/${feedbackRequest.request_id}/${approved ? "accept" : "reject"}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    review_comment: feedbackNotes || (approved ? "Approved" : "Rejected")
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showNotification("success", data.message || (approved ? "Request accepted!" : "Request rejected!"));
+                fetchRequests();
+                setFeedbackModalOpened(false);
+                setFeedbackRequest(null);
+            } else {
+                showNotification("error", data.error || "Failed to send feedback");
+            }
+        } catch {
+            showNotification("error", "Network error");
+        }
+        setFeedbackLoading(false);
+    };
 
     useEffect(() => {
         fetchRequests();
@@ -206,12 +278,78 @@ const RequestListTable = () => {
                                         <td className="border-b px-3 py-2">
                                             <button
                                                 onClick={() => handleOpenPriorityModal(req)}
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold cursor-pointer hover:opacity-80 transition ${priorityColors[req.priority || 'low']}`}
+                                                className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer hover:opacity-80 transition"
+                                                style={{
+                                                    width: "140px", // fixed width
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    background: '#f8fafc',
+                                                    border: 'none'
+                                                }}
                                             >
-                                                {req.priority ? req.priority.charAt(0).toUpperCase() + req.priority.slice(1) : 'Low'}
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    width: '12px',
+                                                    height: '12px',
+                                                    borderRadius: '50%',
+                                                    background: priorityColors[req.priority?.toLowerCase()] || "#aaa",
+                                                    marginRight: '6px',
+                                                    border: '1px solid #ccc'
+                                                }} />
+                                                <span style={{
+                                                    color: priorityColors[req.priority?.toLowerCase()] || "#aaa",
+                                                    fontWeight: 500
+                                                }}>
+                                                    {req.priority ? req.priority.charAt(0).toUpperCase() + req.priority.slice(1) : 'Low'}
+                                                </span>
+                                                <span
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        handleOpenFeedbackModal(req);
+                                                    }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        cursor: 'pointer',
+                                                        marginLeft: 'auto'
+                                                    }}
+                                                    title="Give Feedback"
+                                                >
+                                                    <MdFeedback size={18} color="#2563eb" />
+                                                </span>
                                             </button>
                                         </td>
-                                        <td className="border-b px-3 py-2 text-xs">{renderNotes(req.notes)}</td>
+                                        <td
+                                            className="border-b px-3 py-2 text-xs"
+                                            style={{
+                                                maxWidth: "180px",
+                                                whiteSpace: "nowrap",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                cursor: req.notes ? "pointer" : "default",
+                                                color: req.notes ? "#2563eb" : "#444", // blue color for clickable
+                                                fontWeight: req.notes ? 500 : 400,
+                                                transition: "color 0.2s, text-decoration 0.2s"
+                                            }}
+                                            title={req.notes ? "Click to view full notes" : ""}
+                                            onClick={() => {
+                                                if (req.notes) {
+                                                    setNotesModalContent(req.notes);
+                                                    setNotesModalOpened(true);
+                                                }
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    whiteSpace: "nowrap",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    maxWidth: "170px"
+                                                }}
+                                                dangerouslySetInnerHTML={{ __html: req.notes || "-" }}
+                                            />
+                                        </td>
                                         <td className="border-b px-3 py-2 text-center">
                                             <div className="flex flex-row items-center justify-center gap-4">
                                                 <button
@@ -253,55 +391,65 @@ const RequestListTable = () => {
 
             {/* Priority Modal */}
             <Modal
-                opened={modalOpened}
-                onClose={() => setModalOpened(false)}
-                title="Set Request Priority"
+                opened={feedbackModalOpened}
+                onClose={() => setFeedbackModalOpened(false)}
+                title="Send Feedback to Creator"
                 centered
-                size="sm"
+                size="md"
                 overlayProps={{ blur: 4 }}
             >
-                {selectedRequest && (
+                {feedbackRequest && (
                     <div className="space-y-6">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-sm font-semibold text-gray-700">Task: {selectedRequest.task_title}</label>
-                            <p className="text-xs text-gray-500">User: {selectedRequest.user_first_name} {selectedRequest.user_last_name}</p>
+                        <div>
+                            <div className="text-sm font-semibold text-gray-700 mb-1">Task: {feedbackRequest.task_title}</div>
+                            <div className="text-xs text-gray-500 mb-2">User: {feedbackRequest.user_first_name} {feedbackRequest.user_last_name}</div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="priority" className="text-sm font-semibold text-gray-700">Priority</label>
-                            <Select
-                                id="priority"
-                                data={priorityOptions}
-                                value={modalPriority}
-                                onChange={setModalPriority}
-                                classNames={{
-                                    input: 'input-border font-sans',
-                                    dropdown: 'font-sans',
-                                    item: 'font-sans'
-                                }}
-                                size="md"
-                                radius="xl"
-                                searchable
-                            />
+                        <div>
+                            <label className="text-sm font-semibold text-gray-700 mb-1">Feedback Notes</label>
+                            <div className="border border-gray-300 rounded-lg p-2 bg-gray-50 mb-2">
+                                <EditorContent editor={feedbackEditor} className="tiptap" />
+                            </div>
                         </div>
                         <div className="flex justify-end gap-4">
                             <Button
-                                color="gray"
+                                color="red"
                                 variant="outline"
-                                onClick={() => setModalOpened(false)}
-                                disabled={savePriorityLoading}
+                                className="rounded-full hover:bg-red-500 hover:text-white"
+                                onClick={() => handleSendFeedback(false)}
+                                loading={feedbackLoading}
                             >
-                                Cancel
+                                Reject & Send
                             </Button>
                             <Button
-                                color="blue"
-                                loading={savePriorityLoading}
-                                onClick={handleSavePriority}
+                                color="green"
+                                variant="outline"
+                                className="rounded-full hover:bg-green-500 hover:text-white"
+                                onClick={() => handleSendFeedback(true)}
+                                loading={feedbackLoading}
                             >
-                                Save Priority
+                                Approve & Send
                             </Button>
                         </div>
                     </div>
                 )}
+            </Modal>
+            {/* Notes Modal */}
+            <Modal
+                opened={notesModalOpened}
+                onClose={() => setNotesModalOpened(false)}
+                title="Notes"
+                centered
+                size="md"
+                overlayProps={{ blur: 4 }}
+            >
+                <div
+                    style={{
+                        wordBreak: "break-word",
+                        fontSize: "14px",
+                        color: "#444"
+                    }}
+                    dangerouslySetInnerHTML={{ __html: notesModalContent }}
+                />
             </Modal>
         </>
     );

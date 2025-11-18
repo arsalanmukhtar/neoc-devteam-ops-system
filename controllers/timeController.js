@@ -45,8 +45,9 @@ export const getAllTimeEntries = async (req, res) => {
 
   let query = `
     SELECT 
-      te.entry_id, 
-      te.task_id, 
+      te.entry_id,
+      te.user_id,
+      te.task_id,
       t.title AS task_title, 
       te.start_time, 
       te.end_time, 

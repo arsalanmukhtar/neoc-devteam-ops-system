@@ -10,7 +10,8 @@ import {
     ArcElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    Filler
 } from "chart.js";
 import { BiExpand, BiCollapse } from "react-icons/bi";
 
@@ -24,7 +25,8 @@ ChartJS.register(
     ArcElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
+    Filler
 );
 
 // Enhanced color palette for better visibility

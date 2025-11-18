@@ -4,6 +4,15 @@ import { Modal } from '@mantine/core';
 
 const baseURL = 'http://localhost:3000';
 
+// Status mapping and colors
+const statusMap = {
+    active: { label: 'Active', color: '#2563eb' },        // blue
+    inactive: { label: 'Inactive', color: '#ef4444' },    // red
+    in_progress: { label: 'In Progress', color: '#f59e0b' }, // amber
+    planning: { label: 'Planning', color: '#06b6d4' },    // cyan
+    completed: { label: 'Completed', color: '#22c55e' },  // green
+};
+
 const ProjectListTable = ({ api }) => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,6 +57,24 @@ const ProjectListTable = ({ api }) => {
                         {row.original.name}
                     </span>
                 ),
+            },
+            {
+                accessorKey: 'status',
+                header: 'Status',
+                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
+                Cell: ({ cell }) => {
+                    const value = cell.getValue();
+                    const status = statusMap[value] || { label: value, color: '#44403c' };
+                    return (
+                        <span style={{
+                            color: status.color,
+                            fontWeight: 'bold',
+                            textTransform: 'capitalize'
+                        }}>
+                            {status.label}
+                        </span>
+                    );
+                },
             },
         ],
         []
@@ -113,7 +140,6 @@ const ProjectListTable = ({ api }) => {
                 title={
                     <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
                         <span className='text-stone-700 text-2xl'>Project Details</span>
-                        {/* <span className="text-base font-normal text-gray-500">{selectedProject?.name}</span> */}
                     </div>
                 }
                 centered
@@ -143,8 +169,12 @@ const ProjectListTable = ({ api }) => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="span-label-style">Status</span>
-                                <span className={`text-base font-semibold ${selectedProject.status === 'active' ? 'text-green-600' : selectedProject.status === 'completed' ? 'text-blue-600' : 'text-red-500'}`}>
-                                    {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}
+                                <span style={{
+                                    color: statusMap[selectedProject.status]?.color || '#44403c',
+                                    fontWeight: 'bold',
+                                    textTransform: 'capitalize'
+                                }}>
+                                    {statusMap[selectedProject.status]?.label || selectedProject.status}
                                 </span>
                             </div>
                         </div>

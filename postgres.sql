@@ -125,6 +125,7 @@ CREATE INDEX idx_time_entries_user_time ON "time_entries" (user_id, start_time D
 CREATE TABLE "requests" (
     request_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES "users"(user_id) ON DELETE CASCADE,
+    entry_id UUID REFERENCES "time_entries"(entry_id),
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,

@@ -18,11 +18,26 @@ import Highlight from '@tiptap/extension-highlight';
 
 const baseURL = "http://localhost:3000";
 
-const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "completed", label: "Completed" },
-];
+// Status mapping and colors
+const statusOptions = {
+    active: { label: 'Active', color: '#2563eb' },        // blue
+    inactive: { label: 'Inactive', color: '#ef4444' },    // red
+    in_progress: { label: 'In Progress', color: '#f59e0b' }, // amber
+    planning: { label: 'Planning', color: '#06b6d4' },    // cyan
+    completed: { label: 'Completed', color: '#22c55e' },  // green
+};
+
+// Convert statusOptions to array for Select
+const statusSelectOptions = Object.entries(statusOptions).map(([value, { label }]) => ({
+    value,
+    label,
+}));
+
+const StatusItem = React.forwardRef(({ value, label, ...others }, ref) => (
+    <div ref={ref} {...others} style={{ color: statusOptions[value]?.color }}>
+        {label}
+    </div>
+));
 
 const ProjectDetailsUpdate = ({ api }) => {
     const [projects, setProjects] = useState([]);
@@ -40,10 +55,8 @@ const ProjectDetailsUpdate = ({ api }) => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Add a ref for the color input
     const colorInputRef = useRef();
 
-    // Fetch all projects for selection
     useEffect(() => {
         const token = localStorage.getItem("token");
         fetch(baseURL + "/api/projects/list", {
@@ -56,7 +69,6 @@ const ProjectDetailsUpdate = ({ api }) => {
             .then((data) => setProjects(Array.isArray(data) ? data : []));
     }, []);
 
-    // Fetch managers for dropdown
     useEffect(() => {
         const token = localStorage.getItem("token");
         fetch(baseURL + "/api/users/all", {
@@ -74,7 +86,6 @@ const ProjectDetailsUpdate = ({ api }) => {
             });
     }, []);
 
-    // Fetch selected project details
     useEffect(() => {
         if (selectedId) {
             const token = localStorage.getItem("token");
@@ -110,15 +121,9 @@ const ProjectDetailsUpdate = ({ api }) => {
         }
     }, [success, error]);
 
-    // TipTap editor for description
     const editor = useEditor({
         extensions: [
             StarterKit,
-            // Underline,
-            // BulletList,
-            // OrderedList,
-            // ListItem,
-            // Blockquote,
             Color,
             TextStyle,
             Highlight,
@@ -352,8 +357,6 @@ const ProjectDetailsUpdate = ({ api }) => {
                                 <IoMdClose size={18} color="#555" />
                             </button>
                         </div>
-
-                        {/* Content Box */}
                         <div className="sidebar-scroll border border-gray-300 p-3 min-h-[150px] h-96 bg-white overflow-y-auto">
                             <EditorContent editor={editor} className="tiptap" />
                         </div>
@@ -387,7 +390,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                         <label className="label-style">Status</label>
                         <Select
                             placeholder="Select Status"
-                            data={statusOptions}
+                            data={statusSelectOptions}
                             value={form.status}
                             onChange={(value) => handleSelectChange("status", value)}
                             searchable
@@ -399,6 +402,12 @@ const ProjectDetailsUpdate = ({ api }) => {
                             radius="xl"
                             size="md"
                             required
+                            itemComponent={StatusItem}
+                            styles={{
+                                input: {
+                                    color: form.status ? statusOptions[form.status]?.color : undefined
+                                }
+                            }}
                         />
                     </div>
 

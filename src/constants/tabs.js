@@ -1,9 +1,9 @@
 export const userTabs = [
     { label: 'Register User', value: 'register', api: '/api/auth/register' },
     { label: 'List all Users', value: 'list', api: '/api/users/all' },
-    { label: 'View User Details', value: 'view', api: '/api/users/view' }, // append /:id in component
-    { label: 'Update User Details', value: 'update', api: '/api/users/update' }, // append /:id in component
-    { label: 'Delete User', value: 'delete', api: '/api/users/delete' }, // append /:id in component
+    // { label: 'View User Details', value: 'view', api: '/api/users/view' }, // append /:id in component
+    // { label: 'Update User Details', value: 'update', api: '/api/users/update' }, // append /:id in component
+    // { label: 'Delete User', value: 'delete', api: '/api/users/delete' }, // append /:id in component
 ];
 
 export const projectTabs = [

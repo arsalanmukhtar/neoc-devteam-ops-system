@@ -5,9 +5,6 @@ import { getDefaultTopTab, getAllowedTabs } from '../constants/workspaceHelpers'
 
 import UserRegisterForm from './users/UserRegisterForm';
 import UserListTable from './users/UserListTable';
-import UserDetailsView from './users/UserDetailsView';
-import UserDetailsUpdate from './users/UserDetailsUpdate';
-import UserDelete from './users/UserDelete';
 
 import ProjectCreateForm from './projects/ProjectCreateForm';
 import ProjectListTable from './projects/ProjectListTable';
