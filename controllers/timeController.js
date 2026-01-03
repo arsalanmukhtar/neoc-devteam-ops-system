@@ -21,10 +21,10 @@ export const createTimeEntry = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING entry_id, task_id, start_time, end_time, duration, priority`,
-      [user_id, task_id, start_time, end_time, notes, priority]
+      `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+             RETURNING entry_id, task_id, start_time, end_time, duration, priority, status`,
+      [user_id, task_id, start_time, end_time, notes, priority || 'Medium']
     );
 
     res.status(201).json({
@@ -54,6 +54,7 @@ export const getAllTimeEntries = async (req, res) => {
       te.duration, 
       te.notes, 
       te.priority,
+      te.status,
       te.created_at,
       u.first_name AS user_first_name,
       u.last_name AS user_last_name
@@ -134,10 +135,10 @@ export const updateTimeEntry = async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE time_entries 
-             SET task_id = $1, start_time = $2, end_time = $3, notes = $4, priority = $5
+             SET task_id = $1, start_time = $2, end_time = $3, notes = $4, priority = $5, status = 'pending'
              WHERE entry_id = $6 AND user_id = $7
-             RETURNING entry_id, task_id, duration, notes, priority`,
-      [task_id, start_time, end_time, notes, priority, id, user_id]
+             RETURNING entry_id, task_id, duration, notes, priority, status`,
+      [task_id, start_time, end_time, notes, priority || 'Medium', id, user_id]
     );
 
     if (result.rows.length === 0) {

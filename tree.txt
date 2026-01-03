@@ -1,0 +1,75 @@
+E:\WSL\Ubuntu2204\OS\neoc\neoc-devteam-ops-system
+├── controllers
+│   ├── analyticsController.js
+│   ├── authController.js
+│   ├── projectController.js
+│   ├── requestController.js
+│   ├── taskController.js
+│   ├── timeController.js
+│   └── userController.js
+├── middleware
+│   └── authMiddleware.js
+├── public
+│   └── vite.svg
+├── routes
+│   ├── analyticsRoutes.js
+│   ├── authRoutes.js
+│   ├── projectRoutes.js
+│   ├── requestRoutes.js
+│   ├── taskRoutes.js
+│   ├── timeRoutes.js
+│   └── userRoutes.js
+├── src
+│   ├── assets
+│   │   ├── icons
+│   │   ├── images
+│   │   │   ├── background.jpg
+│   │   │   └── ndma-logo.png
+│   │   └── react.svg
+│   ├── components
+│   │   ├── analytics
+│   │   │   └── Analytics.jsx
+│   │   ├── projects
+│   │   │   ├── ProjectCreateForm.jsx
+│   │   │   ├── ProjectDelete.jsx
+│   │   │   ├── ProjectDetailsUpdate.jsx
+│   │   │   └── ProjectListTable.jsx
+│   │   ├── requests
+│   │   │   └── RequestListTable.jsx
+│   │   ├── tasks
+│   │   │   ├── TaskCreateForm.jsx
+│   │   │   └── TaskListTable.jsx
+│   │   ├── timeEntries
+│   │   │   ├── timeEntryCreateForm.jsx
+│   │   │   └── timeEntryListTable.jsx
+│   │   ├── users
+│   │   │   ├── UserListTable.jsx
+│   │   │   └── UserRegisterForm.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── Login.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── NotificationAlert.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── UserInfo.jsx
+│   │   └── Workspace.jsx
+│   ├── constants
+│   │   ├── tabs.js
+│   │   └── workspaceHelpers.js
+│   ├── App.jsx
+│   ├── index.css
+│   ├── main.jsx
+│   └── themes.css
+├── .env
+├── .env.example
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── postgres.sql
+├── README.md
+├── server.js
+├── tailwind.config.js
+├── tree_to_txt.py
+└── vite.config.js

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
 import { Modal, Button, Select } from '@mantine/core';
+import { formatDate, formatDateTime } from '../../utils/dateFormatter';
 
 const baseURL = 'http://localhost:3000';
 
@@ -129,7 +130,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                 accessorKey: 'due_date',
                 header: 'Due Date',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span>{formatDate(cell.getValue())}</span>,
             },
         ],
         []
@@ -333,12 +334,12 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                             {/* Due Date */}
                             <div className="flex flex-col">
                                 <span className="span-label-style">Due Date</span>
-                                <span className="text-base text-gray-700">{selectedTask.due_date}</span>
+                                <span className="text-base text-gray-700">{formatDate(selectedTask.due_date)}</span>
                             </div>
                             {/* Created At */}
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Created At</span>
-                                <span className="text-base text-gray-700">{selectedTask.created_at}</span>
+                                <span className="text-base text-gray-700">{formatDateTime(selectedTask.created_at)}</span>
                             </div>
                         </div>
                         {/* Modal Action Buttons */}

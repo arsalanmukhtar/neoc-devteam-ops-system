@@ -8,6 +8,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 const baseURL = "http://localhost:3000";
 
@@ -183,7 +184,7 @@ const RequestListTable = () => {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ review_comment: "Rejected by admin/PM" })
+                body: JSON.stringify({ review_comment: "Rejected" })
             });
             const data = await res.json();
             if (res.ok) {
@@ -211,7 +212,7 @@ const RequestListTable = () => {
         setSavePriorityLoading(true);
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}/api/requests/time-entry/${selectedRequest.request_id}/priority`, {
+            const res = await fetch(`${baseURL}/api/requests/time-entry/${selectedRequest.request_id}`, {
                 method: "PUT",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -221,14 +222,8 @@ const RequestListTable = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                setRequests(requests =>
-                    requests.map(req =>
-                        req.request_id === selectedRequest.request_id
-                            ? { ...req, priority: modalPriority }
-                            : req
-                    )
-                );
                 showNotification("success", "Priority updated successfully!");
+                fetchRequests();
                 setModalOpened(false);
                 setSelectedRequest(null);
             } else {
@@ -242,20 +237,19 @@ const RequestListTable = () => {
 
     return (
         <>
-            <div className="p-6 bg-white rounded-xl shadow-lg">
-                <h2 className="text-xl font-bold mb-4 text-gray-700">Pending Time Entry Requests</h2>
+            <div className="p-4 bg-gray-50 rounded-lg shadow">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full border border-gray-200 rounded-lg text-sm">
-                        <thead>
-                            <tr className="bg-gray-50">
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">Task Title</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">User</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">Start Time</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">End Time</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">Duration (hr)</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">Priority</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500">Notes</th>
-                                <th className="px-3 py-2 border-b font-semibold text-gray-500 text-center">Actions</th>
+                    <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <thead className="bg-blue-200">
+                            <tr>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Task</th>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">User</th>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Start Time</th>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">End Time</th>
+                                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Duration (hrs)</th>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Priority</th>
+                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Notes</th>
+                                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -272,8 +266,8 @@ const RequestListTable = () => {
                                     <tr key={req.request_id}>
                                         <td className="border-b px-3 py-2">{req.task_title}</td>
                                         <td className="border-b px-3 py-2">{req.user_first_name} {req.user_last_name}</td>
-                                        <td className="border-b px-3 py-2">{req.start_time?.replace("T", " ").slice(0, 19)}</td>
-                                        <td className="border-b px-3 py-2">{req.end_time?.replace("T", " ").slice(0, 19)}</td>
+                                        <td className="border-b px-3 py-2">{formatDateTime(req.start_time)}</td>
+                                        <td className="border-b px-3 py-2">{formatDateTime(req.end_time)}</td>
                                         <td className="border-b px-3 py-2 text-center font-semibold">{getDurationHours(req.start_time, req.end_time)}</td>
                                         <td className="border-b px-3 py-2">
                                             <button

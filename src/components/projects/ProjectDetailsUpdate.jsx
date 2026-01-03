@@ -16,6 +16,8 @@ import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 
+import NotificationAlert from "../NotificationAlert";
+
 const baseURL = "http://localhost:3000";
 
 // Status mapping and colors
@@ -150,6 +152,14 @@ const ProjectDetailsUpdate = ({ api }) => {
         setLoading(true);
         setError('');
         setSuccess('');
+
+        // Date validation
+        if (form.start_date && form.due_date && form.start_date >= form.due_date) {
+            setError("End date must be greater than start date");
+            setLoading(false);
+            return;
+        }
+
         const token = localStorage.getItem("token");
         try {
             const res = await fetch(`${baseURL}${api}/${selectedId}`, {
@@ -206,46 +216,71 @@ const ProjectDetailsUpdate = ({ api }) => {
                     required
                 />
             </div>
+
             {selectedId && (
-                <form
-                    className="w-full max-w-2xl mx-auto flex flex-col gap-6 font-sans"
-                    onSubmit={handleSubmit}
-                >
+                <form className="w-full max-w-2xl flex flex-col gap-6" onSubmit={handleSubmit}>
                     {/* PROJECT NAME */}
                     <div className="flex flex-col gap-2">
-                        <label className="label-style">Project Name</label>
+                        <label htmlFor="name" className="label-style">
+                            Project Name
+                        </label>
                         <input
                             type="text"
+                            id="name"
                             name="name"
-                            className="border border-gray-300 rounded-full px-4 py-2"
+                            className="input-border"
+                            required
                             value={form.name}
                             onChange={handleChange}
-                            required
                         />
                     </div>
 
-                    {/* DESCRIPTION */}
+                    {/* DESCRIPTION (TipTap Editor) */}
                     <div className="flex flex-col gap-2">
-                        <label className="label-style">Description</label>
-                        <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
+                        <label htmlFor="description" className="label-style">
+                            Description
+                        </label>
+                        <div
+                            className="flex flex-wrap gap-2 mb-2 border border-gray-300 p-2 bg-gray-50"
+                            style={{ borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }}
+                        >
                             <button
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleBold().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('bold') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Bold"
                             >
-                                <b>B</b>
+                                <strong>B</strong>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleItalic().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('italic') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Italic"
                             >
-                                <i>I</i>
+                                <em>I</em>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => editor && editor.chain().focus().toggleStrike().run()}
+                                disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('strike') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Strikethrough"
+                            >
+                                <s>S</s>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleUnderline().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('underline') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Underline"
                             >
                                 <u>U</u>
                             </button>
@@ -253,6 +288,9 @@ const ProjectDetailsUpdate = ({ api }) => {
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleBulletList().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('bulletList') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Bullet List"
                             >
                                 •
                             </button>
@@ -260,6 +298,9 @@ const ProjectDetailsUpdate = ({ api }) => {
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleOrderedList().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('orderedList') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Ordered List"
                             >
                                 1.
                             </button>
@@ -267,38 +308,37 @@ const ProjectDetailsUpdate = ({ api }) => {
                                 type="button"
                                 onClick={() => editor && editor.chain().focus().toggleBlockquote().run()}
                                 disabled={!editor}
+                                className={`px-2 py-1 border rounded ${editor && editor.isActive('blockquote') ? 'bg-stone-300' : 'bg-white'
+                                    }`}
+                                title="Blockquote"
                             >
-                                ❝
+                                "
                             </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleHighlight().run()}
-                                disabled={!editor}
-                                title="Highlight"
+                            <div
                                 style={{
-                                    background: editor && editor.isActive('highlight') ? '#ffe066' : 'transparent',
-                                    borderRadius: '4px',
-                                    padding: '4px',
-                                    transition: 'background 0.2s',
-                                    display: 'flex',
+                                    position: 'relative',
+                                    display: 'inline-flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center'
+                                    gap: '2px'
                                 }}
                             >
-                                <PiHighlighterDuotone
-                                    size={18}
-                                    color={editor && editor.isActive('highlight') ? '#a16207' : '#555'}
-                                    style={{ transition: 'color 0.2s' }}
-                                />
-                            </button>
-                            <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
                                 <button
                                     type="button"
-                                    onClick={() => colorInputRef.current && colorInputRef.current.click()}
                                     disabled={!editor}
-                                    title="Pick Color"
-                                    style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
+                                    onClick={() => colorInputRef.current && colorInputRef.current.click()}
+                                    title="Text Color"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        padding: '4px 8px',
+                                        border: '1px solid #ccc',
+                                        borderRadius: '4px',
+                                        background: '#fff',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.2s'
+                                    }}
                                 >
+                                    <PiHighlighterDuotone size={18} color="#555" />
                                     <span
                                         style={{
                                             display: 'inline-block',
@@ -448,8 +488,20 @@ const ProjectDetailsUpdate = ({ api }) => {
                     </div>
 
                     {/* MESSAGES */}
-                    {error && <div className="text-red-500">{error}</div>}
-                    {success && <div className="text-green-600">{success}</div>}
+                    {error && (
+                        <NotificationAlert
+                            type="error"
+                            message={error}
+                            onClose={() => setError("")}
+                        />
+                    )}
+                    {success && (
+                        <NotificationAlert
+                            type="success"
+                            message={success}
+                            onClose={() => setSuccess("")}
+                        />
+                    )}
 
                     {/* SUBMIT */}
                     <div className="flex justify-end gap-4">

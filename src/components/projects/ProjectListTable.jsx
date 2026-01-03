@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
 import { Modal } from '@mantine/core';
+import { formatDate } from '../../utils/dateFormatter';
 
 const baseURL = 'http://localhost:3000';
 
@@ -182,11 +183,11 @@ const ProjectListTable = ({ api }) => {
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
                                 <span className="span-label-style">Start Date</span>
-                                <span className="text-base text-gray-700">{selectedProject.start_date}</span>
+                                <span className="text-base text-gray-700">{formatDate(selectedProject.start_date)}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="span-label-style">Due Date</span>
-                                <span className="text-base text-gray-700">{selectedProject.due_date}</span>
+                                <span className="text-base text-gray-700">{formatDate(selectedProject.due_date)}</span>
                             </div>
                         </div>
                     </div>

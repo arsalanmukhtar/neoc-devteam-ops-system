@@ -10,6 +10,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
+import { formatDateTime } from '../../utils/dateFormatter';
 
 const baseURL = 'http://localhost:3000';
 
@@ -17,6 +18,12 @@ const priorityColors = {
     low: "#60a5fa",      // blue
     medium: "#eca900",   // yellow
     high: "#ef4444"      // red
+};
+
+const statusColors = {
+    pending: { bg: "#fffbeb", text: "#78350f" },    // very light amber
+    accepted: { bg: "#f0fdf4", text: "#14532d" },   // very light green
+    rejected: { bg: "#fef2f2", text: "#7f1d1d" }    // very light red
 };
 
 const TimeEntryListTable = ({ api = "/api/time/list" }) => {
@@ -38,7 +45,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         setUserId(localStorage.getItem("user_id"));
     }, []);
 
-    useEffect(() => {
+    const fetchEntries = () => {
         const token = localStorage.getItem('token');
         let url = baseURL + api;
         if (roleId === 3 && userId) {
@@ -55,6 +62,13 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 setEntries(Array.isArray(data) ? data : []);
                 setLoading(false);
             });
+    };
+
+    useEffect(() => {
+        if (roleId !== null && userId !== null) {
+            fetchEntries();
+        }
+        // eslint-disable-next-line
     }, [api, roleId, userId]);
 
     // Only allow editing if the current user is the creator (roleId === 3 and userId matches entry.user_id)
@@ -62,6 +76,56 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         if (!entry) return false;
         console.log('roleId:', roleId, 'userId:', userId, 'entry.user_id:', entry.user_id);
         return roleId === 3 && String(userId) === String(entry.user_id);
+    };
+
+    const notesEditor = useEditor({
+        extensions: [StarterKit, Color, TextStyle, Highlight],
+        content: modalNotes,
+        onUpdate: ({ editor }) => setModalNotes(editor.getHTML())
+    });
+
+    const handleUpdateEntry = async () => {
+        if (!selectedEntry || !canEditEntry(selectedEntry)) return;
+        setSaveLoading(true);
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+
+        // For role_id 3, create a request instead of direct update
+        const payload = {
+            entry_id: selectedEntry.entry_id, // Include entry_id to indicate this is an update
+            task_id: selectedEntry.task_id,
+            start_time: selectedEntry.start_time,
+            end_time: modalEndTime ? modalEndTime.toISOString() : selectedEntry.end_time,
+            notes: modalNotes || selectedEntry.notes,
+            priority: selectedEntry.priority
+        };
+
+        try {
+            // Role_id 3 always goes through requests table
+            const res = await fetch(`${baseURL}/api/requests/time-entry`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSuccess('Update request submitted for approval!');
+                setTimeout(() => {
+                    setModalOpened(false);
+                    fetchEntries();
+                }, 1500);
+            } else {
+                setError(data.error || 'Update failed');
+            }
+        } catch {
+            setError('Network error');
+        }
+        setSaveLoading(false);
     };
 
     const columns = useMemo(
@@ -83,7 +147,10 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                             if (canEditEntry(row.original)) {
                                 setSelectedEntry(row.original);
                                 setModalEndTime(row.original.end_time ? new Date(row.original.end_time) : null);
-                                setModalNotes('');
+                                setModalNotes(row.original.notes || '');
+                                if (notesEditor) {
+                                    notesEditor.commands.setContent(row.original.notes || '');
+                                }
                                 setModalOpened(true);
                             }
                         }}
@@ -117,6 +184,29 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 }
             },
             {
+                accessorKey: 'status',
+                header: 'Status',
+                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
+                Cell: ({ cell }) => {
+                    const value = cell.getValue() || 'pending';
+                    const colors = statusColors[value.toLowerCase()] || statusColors.pending;
+                    const label = value.charAt(0).toUpperCase() + value.slice(1);
+                    return (
+                        <span style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            background: colors.bg,
+                            color: colors.text,
+                            fontWeight: 600,
+                            fontSize: '0.875rem'
+                        }}>
+                            {label}
+                        </span>
+                    );
+                }
+            },
+            {
                 accessorKey: 'user_name',
                 header: 'User',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
@@ -132,46 +222,25 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 accessorKey: 'start_time',
                 header: 'Start Time',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => {
-                    const value = cell.getValue();
-                    let display = value;
-                    if (value instanceof Date) {
-                        display = value.toLocaleString();
-                    } else if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-                        display = new Date(value).toLocaleString();
-                    }
-                    return <span>{display || '-'}</span>;
-                },
+                Cell: ({ cell }) => <span>{formatDateTime(cell.getValue())}</span>,
             },
             {
                 accessorKey: 'end_time',
                 header: 'End Time',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => {
-                    const value = cell.getValue();
-                    let display = value;
-                    if (value instanceof Date) {
-                        display = value.toLocaleString();
-                    } else if (typeof value === 'string' && !isNaN(Date.parse(value))) {
-                        display = new Date(value).toLocaleString();
-                    }
-                    return <span>{display || '-'}</span>;
-                },
+                Cell: ({ cell }) => <span>{formatDateTime(cell.getValue())}</span>,
             },
             {
                 accessorKey: 'duration',
-                header: 'Duration (hr)',
+                header: 'Duration (hrs)',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue() || '-'}</span>,
-            },
-            {
-                accessorKey: 'created_at',
-                header: 'Created At',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue() || '-'}</span>,
+                Cell: ({ cell }) => {
+                    const value = cell.getValue();
+                    return <span>{value ? Number(value).toFixed(2) : '-'}</span>;
+                },
             },
         ],
-        [roleId, userId]
+        [roleId, userId, notesEditor]
     );
 
     const table = useMantineReactTable({
@@ -180,16 +249,21 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         enableColumnOrdering: true,
         enablePagination: true,
         mantineTableProps: {
-            striped: true,
+            striped: false,
             highlightOnHover: true,
             withColumnBorders: true,
             style: { background: '#f8fafc', borderRadius: '8px' },
         },
-        mantineTableBodyRowProps: ({ row }) => ({
-            style: {
-                background: '#f8fafc',
-            },
-        }),
+        mantineTableBodyRowProps: ({ row }) => {
+            const status = row.original.status?.toLowerCase() || 'pending';
+            const colors = statusColors[status] || statusColors.pending;
+            return {
+                style: {
+                    background: colors.bg,
+                    transition: 'background 0.2s',
+                },
+            };
+        },
         mantineTableBodyCellProps: {
             sx: { background: 'inherit' },
         },
@@ -206,84 +280,6 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         },
     });
 
-    const notesEditor = useEditor({
-        extensions: [
-            StarterKit,
-            Color,
-            TextStyle,
-            Highlight
-        ],
-        content: modalNotes,
-        onUpdate: ({ editor }) => setModalNotes(editor.getHTML()),
-    });
-
-    useEffect(() => {
-        if (notesEditor && modalOpened) {
-            notesEditor.commands.setContent("");
-            setModalNotes("");
-        }
-    }, [modalOpened]);
-
-    useEffect(() => {
-        if (success || error) {
-            const timer = setTimeout(() => {
-                setSuccess('');
-                setError('');
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [success, error]);
-
-    const handleUpdateEntry = async () => {
-        if (!selectedEntry) return;
-        if (!canEditEntry(selectedEntry)) {
-            setError("You are not authorized to edit this entry.");
-            return;
-        }
-        if (!modalNotes || modalNotes.trim() === "" || modalNotes === "<p></p>") {
-            setError("Notes cannot be empty.");
-            return;
-        }
-        setSaveLoading(true);
-        setError('');
-        setSuccess('');
-        const token = localStorage.getItem('token');
-        try {
-            // Only allow update if creator is editing their own entry
-            if (roleId === 3 && userId === selectedEntry.user_id) {
-                const res = await fetch(`${baseURL}/api/requests/request/time-entry`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        entry_id: selectedEntry.entry_id,
-                        task_id: selectedEntry.task_id,
-                        start_time: selectedEntry.start_time,
-                        end_time: modalEndTime instanceof Date ? modalEndTime.toISOString() : modalEndTime,
-                        notes: modalNotes,
-                        user_id: userId,
-                    }),
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    setSuccess('Update request submitted for approval!');
-                    setTimeout(() => {
-                        setModalOpened(false);
-                    }, 3000);
-                } else {
-                    setError(data.error || "Request failed");
-                }
-            } else {
-                setError("You are not authorized to edit this entry.");
-            }
-        } catch {
-            setError("Network error");
-        }
-        setSaveLoading(false);
-    };
-
     if (loading) {
         return (
             <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
@@ -295,7 +291,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
     if (!entries.length) {
         return (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#e53e3e', background: '#f8fafc', borderRadius: '8px' }}>
-                No time entries found or unauthorized.
+                No time entries found.
             </div>
         );
     }
@@ -314,178 +310,191 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 centered
                 size="lg"
                 overlayProps={{ blur: 4 }}
-                className='sidebar-scroll'
             >
                 {selectedEntry && (
                     <div className="p-4 bg-white rounded-lg shadow space-y-6">
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Task Title</span>
-                            <span className="text-lg font-bold text-blue-400">{selectedEntry.task_title || '-'}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Priority</span>
-                            <span style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <span style={{
-                                    display: 'inline-block',
-                                    width: '12px',
-                                    height: '12px',
-                                    borderRadius: '50%',
-                                    background: priorityColors[selectedEntry.priority?.toLowerCase()] || "#aaa",
-                                    marginRight: '6px',
-                                    border: '1px solid #ccc'
-                                }} />
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Task</span>
+                                <span className="text-base text-gray-700">{selectedEntry.task_title || '-'}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Priority</span>
                                 <span style={{
                                     color: priorityColors[selectedEntry.priority?.toLowerCase()] || "#aaa",
-                                    fontWeight: 500
+                                    fontWeight: 600
                                 }}>
-                                    {selectedEntry.priority
-                                        ? selectedEntry.priority.charAt(0).toUpperCase() + selectedEntry.priority.slice(1)
-                                        : "-"}
+                                    {selectedEntry.priority ? selectedEntry.priority.charAt(0).toUpperCase() + selectedEntry.priority.slice(1) : '-'}
                                 </span>
-                            </span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">User</span>
-                            <span className="text-base text-gray-700">
-                                {selectedEntry.user_first_name && selectedEntry.user_last_name
-                                    ? `${selectedEntry.user_first_name} ${selectedEntry.user_last_name}`
-                                    : '-'}
-                            </span>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
+                                <span style={{
+                                    display: 'inline-block',
+                                    padding: '4px 12px',
+                                    borderRadius: '12px',
+                                    background: statusColors[selectedEntry.status?.toLowerCase()]?.bg || statusColors.pending.bg,
+                                    color: statusColors[selectedEntry.status?.toLowerCase()]?.text || statusColors.pending.text,
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem',
+                                    width: 'fit-content'
+                                }}>
+                                    {selectedEntry.status ? selectedEntry.status.charAt(0).toUpperCase() + selectedEntry.status.slice(1) : 'Pending'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">User</span>
+                                <span className="text-base text-gray-700">
+                                    {selectedEntry.user_first_name && selectedEntry.user_last_name
+                                        ? `${selectedEntry.user_first_name} ${selectedEntry.user_last_name}`
+                                        : '-'}
+                                </span>
+                            </div>
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Time</span>
-                                <span className="text-base text-gray-700">{selectedEntry.start_time || '-'}</span>
+                                <span className="text-base text-gray-700">{formatDateTime(selectedEntry.start_time)}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">End Time</span>
-                                <DateTimePicker
-                                    value={modalEndTime}
-                                    onChange={setModalEndTime}
-                                    classNames={{
-                                        input: "input-border font-sans",
-                                        dropdown: "font-sans",
-                                        item: "font-sans",
-                                    }}
-                                    radius="xl"
-                                    size="md"
-                                    required
-                                />
+                                {canEditEntry(selectedEntry) ? (
+                                    <DateTimePicker
+                                        value={modalEndTime}
+                                        onChange={setModalEndTime}
+                                        placeholder="Pick end time"
+                                        classNames={{
+                                            input: 'input-border font-sans',
+                                            dropdown: 'font-sans',
+                                        }}
+                                        radius="xl"
+                                        size="xs"
+                                    />
+                                ) : (
+                                    <span className="text-base text-gray-700">{formatDateTime(selectedEntry.end_time)}</span>
+                                )}
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Duration (hr)</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Duration (hrs)</span>
                                 <span className="text-base text-gray-700">{selectedEntry.duration || '-'}</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Created At</span>
-                                <span className="text-base text-gray-700">{selectedEntry.created_at || '-'}</span>
+                                <span className="text-base text-gray-700">{formatDateTime(selectedEntry.created_at)}</span>
                             </div>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Notes</span>
-                            <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBold().run()} disabled={!notesEditor}><b>B</b></button>
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleItalic().run()} disabled={!notesEditor}><i>I</i></button>
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleUnderline().run()} disabled={!notesEditor}><u>U</u></button>
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBulletList().run()} disabled={!notesEditor}>•</button>
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleOrderedList().run()} disabled={!notesEditor}>1.</button>
-                                <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBlockquote().run()} disabled={!notesEditor}>❝</button>
-                                <button
-                                    type="button"
-                                    onClick={() => notesEditor && notesEditor.chain().focus().toggleHighlight().run()}
-                                    disabled={!notesEditor}
-                                    title="Highlight"
-                                    style={{
-                                        background: notesEditor && notesEditor.isActive('highlight') ? '#ffe066' : 'transparent',
-                                        borderRadius: '4px',
-                                        padding: '4px',
-                                        transition: 'background 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                >
-                                    <PiHighlighterDuotone
-                                        size={18}
-                                        color={notesEditor && notesEditor.isActive('highlight') ? '#a16207' : '#555'}
-                                        style={{ transition: 'color 0.2s' }}
-                                    />
-                                </button>
-                                <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
-                                    <button
-                                        type="button"
-                                        onClick={() => colorInputRef.current && colorInputRef.current.click()}
-                                        disabled={!notesEditor}
-                                        title="Pick Color"
-                                        style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
-                                    >
-                                        <span
+                            {canEditEntry(selectedEntry) ? (
+                                <>
+                                    <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBold().run()} disabled={!notesEditor}><b>B</b></button>
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleItalic().run()} disabled={!notesEditor}><i>I</i></button>
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleUnderline().run()} disabled={!notesEditor}><u>U</u></button>
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBulletList().run()} disabled={!notesEditor}>•</button>
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleOrderedList().run()} disabled={!notesEditor}>1.</button>
+                                        <button type="button" onClick={() => notesEditor && notesEditor.chain().focus().toggleBlockquote().run()} disabled={!notesEditor}>❝</button>
+                                        <button
+                                            type="button"
+                                            onClick={() => notesEditor && notesEditor.chain().focus().toggleHighlight().run()}
+                                            disabled={!notesEditor}
+                                            title="Highlight"
                                             style={{
-                                                display: 'inline-block',
-                                                width: '20px',
-                                                height: '20px',
-                                                background: notesEditor && notesEditor.getAttributes('textStyle').color ? notesEditor.getAttributes('textStyle').color : '#eee',
-                                                border: '1px solid #ccc',
+                                                background: notesEditor && notesEditor.isActive('highlight') ? '#ffe066' : 'transparent',
                                                 borderRadius: '4px',
-                                                verticalAlign: 'middle',
-                                                marginRight: '2px',
+                                                padding: '4px',
+                                                transition: 'background 0.2s',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                        >
+                                            <PiHighlighterDuotone
+                                                size={18}
+                                                color={notesEditor && notesEditor.isActive('highlight') ? '#a16207' : '#555'}
+                                                style={{ transition: 'color 0.2s' }}
+                                            />
+                                        </button>
+                                        <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => colorInputRef.current && colorInputRef.current.click()}
+                                                disabled={!notesEditor}
+                                                title="Pick Color"
+                                                style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
+                                            >
+                                                <span
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        width: '20px',
+                                                        height: '20px',
+                                                        background: notesEditor && notesEditor.getAttributes('textStyle').color ? notesEditor.getAttributes('textStyle').color : '#eee',
+                                                        border: '1px solid #ccc',
+                                                        borderRadius: '4px',
+                                                        verticalAlign: 'middle',
+                                                        marginRight: '2px',
+                                                        transition: 'background 0.2s'
+                                                    }}
+                                                />
+                                            </button>
+                                            <input
+                                                type="color"
+                                                ref={colorInputRef}
+                                                style={{
+                                                    display: 'block',
+                                                    position: 'absolute',
+                                                    left: 0,
+                                                    top: '100%',
+                                                    zIndex: 10,
+                                                    marginTop: '2x',
+                                                    border: 'none',
+                                                    background: 'transparent',
+                                                    padding: 0,
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    cursor: 'pointer',
+                                                    opacity: 0
+                                                }}
+                                                onChange={e => {
+                                                    if (notesEditor) {
+                                                        notesEditor.chain().focus().setColor(e.target.value).run();
+                                                    }
+                                                }}
+                                                tabIndex={-1}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => notesEditor && notesEditor.chain().focus().unsetColor().run()}
+                                            disabled={!notesEditor}
+                                            title="Remove Color"
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                padding: '2px',
+                                                borderRadius: '4px',
+                                                background: 'transparent',
                                                 transition: 'background 0.2s'
                                             }}
-                                        />
-                                    </button>
-                                    <input
-                                        type="color"
-                                        ref={colorInputRef}
-                                        style={{
-                                            display: 'block',
-                                            position: 'absolute',
-                                            left: 0,
-                                            top: '100%',
-                                            zIndex: 10,
-                                            marginTop: '2x',
-                                            border: 'none',
-                                            background: 'transparent',
-                                            padding: 0,
-                                            width: '20px',
-                                            height: '20px',
-                                            cursor: 'pointer',
-                                            opacity: 0
-                                        }}
-                                        onChange={e => {
-                                            if (notesEditor) {
-                                                notesEditor.chain().focus().setColor(e.target.value).run();
-                                            }
-                                        }}
-                                        tabIndex={-1}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => notesEditor && notesEditor.chain().focus().unsetColor().run()}
-                                    disabled={!notesEditor}
-                                    title="Remove Color"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        padding: '2px',
-                                        borderRadius: '4px',
-                                        background: 'transparent',
-                                        transition: 'background 0.2s'
-                                    }}
-                                >
-                                    <IoMdClose size={18} color="#555" />
-                                </button>
-                            </div>
-                            <div className="sidebar-scroll border border-gray-300 p-3 min-h-[100px] h-48 bg-white overflow-y-auto">
-                                <EditorContent editor={notesEditor} className="tiptap" />
-                            </div>
+                                        >
+                                            <IoMdClose size={18} color="#555" />
+                                        </button>
+                                    </div>
+                                    <div className="sidebar-scroll border border-gray-300 p-3 min-h-[100px] h-48 bg-white overflow-y-auto">
+                                        <EditorContent editor={notesEditor} className="tiptap" />
+                                    </div>
+                                </>
+                            ) : (
+                                <div
+                                    className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
+                                    dangerouslySetInnerHTML={{ __html: selectedEntry.notes || '-' }}
+                                />
+                            )}
                         </div>
                         {error && (
                             <NotificationAlert
@@ -511,15 +520,16 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                color="green"
-                                className="w-40 rounded-full"
-                                loading={saveLoading}
-                                onClick={handleUpdateEntry}
-                                disabled={!canEditEntry(selectedEntry)}
-                            >
-                                Update Entry
-                            </Button>
+                            {canEditEntry(selectedEntry) && (
+                                <Button
+                                    color="green"
+                                    className="w-40 rounded-full"
+                                    loading={saveLoading}
+                                    onClick={handleUpdateEntry}
+                                >
+                                    Submit Update
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}

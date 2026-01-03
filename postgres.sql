@@ -113,6 +113,14 @@ CREATE TABLE "time_entries" (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Add priority column if it doesn't exist
+ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS priority VARCHAR (50) NOT NULL DEFAULT 'Medium';
+
+ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS status VARCHAR (20) NOT NULL DEFAULT 'pending';
+
+-- Update existing entries to 'accepted' status (assuming they were already approved)
+UPDATE "time_entries" SET status = 'accepted' WHERE status = 'pending';
+
 -- Index for common reporting queries (e.g., "all time entries for a user over a date range")
 CREATE INDEX idx_time_entries_user_time ON "time_entries" (user_id, start_time DESC);
 

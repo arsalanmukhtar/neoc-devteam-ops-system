@@ -3,13 +3,21 @@ import { pool } from "../server.js";
 // Create a new time entry request (supports update requests)
 export const createTimeEntryRequest = async (req, res) => {
   const { user_id } = req.user; // from auth middleware
-  const { entry_id, task_id, start_time, end_time, notes } = req.body;
+  const { entry_id, task_id, start_time, end_time, notes, priority } = req.body;
   try {
+    // If this is an update request (entry_id exists), set the time_entry status to pending immediately
+    if (entry_id) {
+      await pool.query(
+        `UPDATE time_entries SET status = 'pending' WHERE entry_id = $1`,
+        [entry_id]
+      );
+    }
+
     const result = await pool.query(
-      `INSERT INTO requests (user_id, entry_id, task_id, start_time, end_time, notes, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+      `INSERT INTO requests (user_id, entry_id, task_id, start_time, end_time, notes, priority, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
              RETURNING *`,
-      [user_id, entry_id || null, task_id, start_time, end_time, notes]
+      [user_id, entry_id || null, task_id, start_time, end_time, notes, priority || 'Medium']
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -64,27 +72,31 @@ export const acceptTimeEntryRequest = async (req, res) => {
                     task_id = $1,
                     start_time = $2,
                     end_time = $3,
-                    notes = $4
-                 WHERE entry_id = $5`,
+                    notes = $4,
+                    priority = $5,
+                    status = 'accepted'
+                 WHERE entry_id = $6`,
         [
           request.task_id,
           request.start_time,
           request.end_time,
           request.notes,
+          request.priority,
           request.entry_id,
         ]
       );
     } else {
-      // Insert new time entry
+      // Insert new time entry with status='accepted'
       await pool.query(
-        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes)
-                 VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'accepted')`,
         [
           request.user_id,
           request.task_id,
           request.start_time,
           request.end_time,
           request.notes,
+          request.priority,
         ]
       );
     }
@@ -108,13 +120,48 @@ export const rejectTimeEntryRequest = async (req, res) => {
   const { user_id } = req.user; // reviewer
   const { review_comment } = req.body;
   try {
-    // Update request status to rejected and optionally delete
+    // Get the request
+    const requestRes = await pool.query(
+      `SELECT * FROM requests WHERE request_id = $1 AND status = 'pending'`,
+      [id]
+    );
+    if (requestRes.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Request not found or already processed" });
+    }
+    const request = requestRes.rows[0];
+
+    if (request.entry_id) {
+      // Update existing time entry status to rejected (don't change the time data)
+      await pool.query(
+        `UPDATE time_entries SET
+                    status = 'rejected'
+                 WHERE entry_id = $1`,
+        [request.entry_id]
+      );
+    } else {
+      // Insert new time entry with status='rejected' so user can see it was rejected
+      await pool.query(
+        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'rejected')`,
+        [
+          request.user_id,
+          request.task_id,
+          request.start_time,
+          request.end_time,
+          request.notes,
+          request.priority,
+        ]
+      );
+    }
+
+    // Update request status to rejected
     await pool.query(
       `UPDATE requests SET status = 'rejected', reviewed_by = $1, reviewed_at = NOW(), review_comment = $2 WHERE request_id = $3`,
       [user_id, review_comment || "", id]
     );
-    // Optionally, delete the row after review (or keep for audit)
-    // await pool.query(`DELETE FROM requests WHERE request_id = $1`, [id]);
+
     res.json({ message: "Request rejected." });
   } catch (error) {
     console.error("Error rejecting request:", error);
