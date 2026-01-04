@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Select, Modal } from "@mantine/core";
 import NotificationAlert from "../NotificationAlert";
 
-const baseURL = "http://localhost:3000";
+// const baseURL = "http://localhost:3000";
 
 const ProjectDelete = ({ api = "/api/projects/delete" }) => {
     const [projects, setProjects] = useState([]);
@@ -16,7 +16,7 @@ const ProjectDelete = ({ api = "/api/projects/delete" }) => {
     // Fetch all projects for selection
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/projects/list", {
+        fetch("/api/projects/list", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -55,7 +55,7 @@ const ProjectDelete = ({ api = "/api/projects/delete" }) => {
         setSuccess('');
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}${api}/${selectedId}`, {
+            const res = await fetch(`${api}/${selectedId}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

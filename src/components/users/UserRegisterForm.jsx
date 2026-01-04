@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Select } from '@mantine/core';
 import NotificationAlert from "../NotificationAlert";
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 const UserRegisterForm = ({ api, onRegistered }) => {
     const [form, setForm] = useState({
@@ -26,7 +26,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
         setLoading(true);
         setError('');
         try {
-            const res = await fetch(baseURL + api, {
+            const res = await fetch(api, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form)

@@ -10,7 +10,7 @@ import Highlight from '@tiptap/extension-highlight';
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 const priorityOptions = [
     { value: "low", label: "Low", color: "#60a5fa" },      // blue
@@ -43,7 +43,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
     // Fetch tasks for dropdown
     useEffect(() => {
         const token = localStorage.getItem("token");
-        let url = baseURL + "/api/tasks/list";
+        let url = "/api/tasks/list";
         if (roleId === 3 && userId) {
             url += `?assigned_to_id=${userId}`;
         }
@@ -85,7 +85,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
         setSuccess('');
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}/api/requests/time-entry`, {
+            const res = await fetch(`/api/requests/time-entry`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,

@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
 import { Modal, Button, Select } from '@mantine/core';
-import { formatDate, formatDateTime } from '../../utils/dateFormatter';
+import { formatDate, formatDateTime } from '@src/utils/dateFormatter';
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 const statusColors = {
     pending: 'text-yellow-700 font-semibold',
@@ -51,8 +51,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
     // Fetch tasks
     useEffect(() => {
         const token = localStorage.getItem('token');
-        let url = baseURL + api;
-        fetch(url, {
+        fetch(api, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -176,7 +175,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
         setDeleteLoading(true);
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`${baseURL}/api/tasks/delete/${selectedTask.task_id}`, {
+            const res = await fetch(`/api/tasks/delete/${selectedTask.task_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -199,7 +198,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
         setSaveLoading(true);
         const token = localStorage.getItem('token');
         try {
-            await fetch(`${baseURL}/api/tasks/update/${selectedTask.task_id}`, {
+            await fetch(`/api/tasks/update/${selectedTask.task_id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

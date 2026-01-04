@@ -8,9 +8,9 @@ import StarterKit from "@tiptap/starter-kit";
 import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import { formatDateTime } from '../../utils/dateFormatter';
+import { formatDateTime } from '@src/utils/dateFormatter';
 
-const baseURL = "http://localhost:3000";
+// const baseURL = "http://localhost:3000";
 
 const priorityOptions = [
     { value: "low", label: "Low", color: "#60a5fa" },
@@ -94,7 +94,7 @@ const RequestListTable = () => {
         setFeedbackLoading(true);
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}/api/requests/time-entry/${feedbackRequest.request_id}/${approved ? "accept" : "reject"}`, {
+            const res = await fetch(`/api/requests/time-entry/${feedbackRequest.request_id}/${approved ? "accept" : "reject"}`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -128,7 +128,7 @@ const RequestListTable = () => {
         setError("");
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${baseURL}/api/requests/time-entry?status=pending`, {
+            const res = await fetch(`/api/requests/time-entry?status=pending`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -154,7 +154,7 @@ const RequestListTable = () => {
         setSuccess("");
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${baseURL}/api/requests/time-entry/${id}/accept`, {
+            const res = await fetch(`/api/requests/time-entry/${id}/accept`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -178,7 +178,7 @@ const RequestListTable = () => {
         setSuccess("");
         try {
             const token = localStorage.getItem("token");
-            const res = await fetch(`${baseURL}/api/requests/time-entry/${id}/reject`, {
+            const res = await fetch(`/api/requests/time-entry/${id}/reject`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -212,7 +212,7 @@ const RequestListTable = () => {
         setSavePriorityLoading(true);
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}/api/requests/time-entry/${selectedRequest.request_id}`, {
+            const res = await fetch(`/api/requests/time-entry/${selectedRequest.request_id}`, {
                 method: "PUT",
                 headers: {
                     Authorization: `Bearer ${token}`,

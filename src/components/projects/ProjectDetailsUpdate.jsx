@@ -18,7 +18,7 @@ import Highlight from '@tiptap/extension-highlight';
 
 import NotificationAlert from "../NotificationAlert";
 
-const baseURL = "http://localhost:3000";
+// const baseURL = "http://localhost:3000";
 
 // Status mapping and colors
 const statusOptions = {
@@ -61,7 +61,7 @@ const ProjectDetailsUpdate = ({ api }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/projects/list", {
+        fetch("/api/projects/list", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -73,7 +73,7 @@ const ProjectDetailsUpdate = ({ api }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/users/all", {
+        fetch("/api/users/all", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -91,7 +91,7 @@ const ProjectDetailsUpdate = ({ api }) => {
     useEffect(() => {
         if (selectedId) {
             const token = localStorage.getItem("token");
-            fetch(`${baseURL}/api/projects/view/${selectedId}`, {
+            fetch(`/api/projects/view/${selectedId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
@@ -162,7 +162,7 @@ const ProjectDetailsUpdate = ({ api }) => {
 
         const token = localStorage.getItem("token");
         try {
-            const res = await fetch(`${baseURL}${api}/${selectedId}`, {
+            const res = await fetch(`${api}/${selectedId}`, {
                 method: "PUT",
                 headers: {
                     Authorization: `Bearer ${token}`,

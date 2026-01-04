@@ -3,7 +3,7 @@ import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
 import { Modal, Button, Select } from '@mantine/core';
 import NotificationAlert from "../NotificationAlert";
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 const roles = [
     { value: '1', label: 'Administrator' },
@@ -38,7 +38,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
     // Fetch all users
     useEffect(() => {
         const token = localStorage.getItem('token');
-        fetch(baseURL + api, {
+        fetch(api, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -55,7 +55,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
     useEffect(() => {
         if (selectedUser) {
             const token = localStorage.getItem('token');
-            fetch(`${baseURL}/api/users/view/${selectedUser.user_id}`, {
+            fetch(`/api/users/view/${selectedUser.user_id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -188,7 +188,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
         setSuccess('');
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`${baseURL}/api/users/update/${selectedUser.user_id}`, {
+            const res = await fetch(`/api/users/update/${selectedUser.user_id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,

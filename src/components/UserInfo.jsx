@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { IoPersonCircle } from "react-icons/io5";
 
-const API_URL = "http://localhost:3000/api/auth/me"; // Adjust if needed
+const API_URL = "/api/auth/me"; // Adjust if needed
 
 const UserInfo = ({ onLogout }) => {
     const [open, setOpen] = useState(false);

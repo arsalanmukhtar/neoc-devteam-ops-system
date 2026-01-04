@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
 import { Modal } from '@mantine/core';
-import { formatDate } from '../../utils/dateFormatter';
+import { formatDate } from '@src/utils/dateFormatter';
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 // Status mapping and colors
 const statusMap = {
@@ -23,7 +23,7 @@ const ProjectListTable = ({ api }) => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        fetch(baseURL + api, {
+        fetch(api, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

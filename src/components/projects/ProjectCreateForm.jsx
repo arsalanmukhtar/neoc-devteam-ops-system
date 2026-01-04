@@ -15,7 +15,7 @@ import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 
-const baseURL = "http://localhost:3000";
+// const baseURL = "http://localhost:3000";
 
 // Status mapping and colors
 const statusOptions = {
@@ -50,7 +50,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch("http://localhost:3000/api/users/all", {
+        fetch("/api/users/all", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -107,7 +107,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         const token = localStorage.getItem("token");
 
         try {
-            const res = await fetch(baseURL + api, {
+            const res = await fetch(api, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,

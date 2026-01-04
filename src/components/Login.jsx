@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import NotificationAlert from './NotificationAlert';
 
-const API_URL = 'http://localhost:3000/api/auth';
+const API_URL = '/api/auth';
 
 const Login = ({ onLogin, selectedRole }) => {
   const [email, setEmail] = useState('');

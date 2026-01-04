@@ -10,9 +10,9 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
-import { formatDateTime } from '../../utils/dateFormatter';
+import { formatDateTime } from '@src/utils/dateFormatter';
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
 
 const priorityColors = {
     low: "#60a5fa",      // blue
@@ -47,7 +47,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
 
     const fetchEntries = () => {
         const token = localStorage.getItem('token');
-        let url = baseURL + api;
+        let url = api;
         if (roleId === 3 && userId) {
             url += `?user_id=${userId}`;
         }
@@ -104,7 +104,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
 
         try {
             // Role_id 3 always goes through requests table
-            const res = await fetch(`${baseURL}/api/requests/time-entry`, {
+            const res = await fetch(`/api/requests/time-entry`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

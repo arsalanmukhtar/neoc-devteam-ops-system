@@ -91,7 +91,7 @@ If you are developing a production application, we recommend using TypeScript wi
         "title": "Setup Project Repo - Updated",
         "description": "Updated task description.",
         "assigned_to_id": "8c91acef-63da-411b-b77e-6236231fd1e3",
-        "priority": "Medium",
+        "priority": "medium",
         "status": "In Progress",
         "due_date": "2025-11-15"
     },

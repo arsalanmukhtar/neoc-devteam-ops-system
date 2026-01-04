@@ -17,7 +17,7 @@ import Color from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 
-const baseURL = "http://localhost:3000";
+// const baseURL = "http://localhost:3000";
 
 const priorityOptions = [
     { value: "low", label: "Low" },
@@ -52,7 +52,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
     // Fetch projects for Select
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/projects/list", {
+        fetch("/api/projects/list", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -65,7 +65,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
     // Fetch users for Select
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch(baseURL + "/api/users/all", {
+        fetch("/api/users/all", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -123,7 +123,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
         const token = localStorage.getItem("token");
 
         try {
-            const res = await fetch(baseURL + api, {
+            const res = await fetch(api, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
