@@ -1,7 +1,6 @@
 // File: controllers/userController.js
 import bcrypt from "bcrypt";
 import { pool } from "../server.js";
-// Note: We're not importing bcrypt/jwt here because registration/login are in authController.js
 
 // --- Get All Users Logic (Admin Only) ---
 export const getAllUsers = async (req, res) => {
@@ -17,6 +16,38 @@ export const getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching all users:", error);
     res.status(500).json({ error: "Server error while fetching users." });
+  }
+};
+
+// --- Get All Managers Logic (Admin or PM) ---
+export const getAllManagers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT user_id, first_name, last_name, email 
+       FROM users 
+       WHERE role_id = 2 AND is_active = true
+       ORDER BY first_name, last_name`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching managers:", error);
+    res.status(500).json({ error: "Server error while fetching managers." });
+  }
+};
+
+// --- Get All Team Members Logic (Admin or PM) ---
+export const getAllTeamMembers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT user_id, first_name, last_name, email, role_id
+       FROM users 
+       WHERE is_active = true
+       ORDER BY first_name, last_name`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching team members:", error);
+    res.status(500).json({ error: "Server error while fetching team members." });
   }
 };
 
@@ -80,12 +111,10 @@ export const updateUser = async (req, res) => {
 };
 
 // --- Delete/Deactivate User Logic (Admin Only) ---
-// Note: We implement deletion by setting is_active to FALSE for safety.
 export const deactivateUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Set is_active to FALSE instead of hard DELETE
     const result = await pool.query(
       `UPDATE users 
              SET is_active = FALSE 

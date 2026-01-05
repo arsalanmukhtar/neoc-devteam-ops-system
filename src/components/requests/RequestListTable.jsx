@@ -14,7 +14,7 @@ import { formatDateTime } from '@src/utils/dateFormatter';
 
 const priorityOptions = [
     { value: "low", label: "Low", color: "#60a5fa" },
-    { value: "medium", label: "medium", color: "#eca900" },
+    { value: "medium", label: "Medium", color: "#eca900" },
     { value: "high", label: "High", color: "#ef4444" },
 ];
 
@@ -156,7 +156,13 @@ const RequestListTable = () => {
             const token = localStorage.getItem("token");
             const res = await fetch(`/api/requests/time-entry/${id}/accept`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    review_comment: "Approved"
+                })
             });
             const data = await res.json();
             if (res.ok) {
@@ -274,7 +280,7 @@ const RequestListTable = () => {
                                                 onClick={() => handleOpenPriorityModal(req)}
                                                 className="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition"
                                                 style={{
-                                                    width: "140px", // fixed width
+                                                    width: "140px",
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '0.5rem',
@@ -322,7 +328,7 @@ const RequestListTable = () => {
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
                                                 cursor: req.notes ? "pointer" : "default",
-                                                color: req.notes ? "#2563eb" : "#444", // blue color for clickable
+                                                color: req.notes ? "#2563eb" : "#444",
                                                 fontWeight: req.notes ? 500 : 400,
                                                 transition: "color 0.2s, text-decoration 0.2s"
                                             }}
@@ -383,7 +389,7 @@ const RequestListTable = () => {
                 )}
             </div>
 
-            {/* Priority Modal */}
+            {/* Feedback Modal */}
             <Modal
                 opened={feedbackModalOpened}
                 onClose={() => setFeedbackModalOpened(false)}
@@ -405,8 +411,8 @@ const RequestListTable = () => {
 
                             <div className="border border-gray-300 rounded-lg p-2 bg-gray-50 mb-2">
                                 <EditorContent
-                                editor={feedbackEditor}
-                                className="
+                                    editor={feedbackEditor}
+                                    className="
                                     text-xs
                                     tiptap
                                     max-h-56
@@ -439,6 +445,7 @@ const RequestListTable = () => {
                     </div>
                 )}
             </Modal>
+
             {/* Notes Modal */}
             <Modal
                 opened={notesModalOpened}

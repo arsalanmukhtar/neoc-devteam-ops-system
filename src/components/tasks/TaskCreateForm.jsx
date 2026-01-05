@@ -21,7 +21,7 @@ import Highlight from '@tiptap/extension-highlight';
 
 const priorityOptions = [
     { value: "low", label: "Low" },
-    { value: "medium", label: "medium" },
+    { value: "medium", label: "Medium" },
     { value: "high", label: "High" },
 ];
 
@@ -59,20 +59,22 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
             },
         })
             .then((res) => res.json())
-            .then((data) => setProjects(Array.isArray(data) ? data : []));
+            .then((data) => setProjects(Array.isArray(data) ? data : []))
+            .catch((err) => console.error("Error fetching projects:", err));
     }, []);
 
-    // Fetch users for Select
+    // Fetch team members for Select
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch("/api/users/all", {
+        fetch("/api/users/team", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
         })
             .then((res) => res.json())
-            .then((data) => setUsers(Array.isArray(data) ? data : []));
+            .then((data) => setUsers(Array.isArray(data) ? data : []))
+            .catch((err) => console.error("Error fetching users:", err));
     }, []);
 
     useEffect(() => {
@@ -89,11 +91,6 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,
-            // Underline,
-            // BulletList,
-            // OrderedList,
-            // ListItem,
-            // Blockquote,
             Color,
             TextStyle,
             Highlight
@@ -169,7 +166,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                 <Select
                     placeholder="Select Project"
                     data={projects.map((p) => ({
-                        value: p.project_id,
+                        value: String(p.project_id),
                         label: p.name,
                     }))}
                     value={form.project_id}
@@ -346,7 +343,7 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                 <Select
                     placeholder="Select User"
                     data={users.map((u) => ({
-                        value: u.user_id,
+                        value: String(u.user_id),
                         label: `${u.first_name} ${u.last_name}`,
                     }))}
                     value={form.assigned_to_id}
@@ -442,15 +439,18 @@ const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
                 <button
                     type="button"
                     className="mt-6 bg-red-400 text-white font-semibold py-2 w-40 rounded-full hover:bg-red-500 transition"
-                    onClick={() => setForm({
-                        project_id: "",
-                        title: "",
-                        description: "",
-                        assigned_to_id: "",
-                        priority: "",
-                        status: "",
-                        due_date: "",
-                    })}
+                    onClick={() => {
+                        setForm({
+                            project_id: "",
+                            title: "",
+                            description: "",
+                            assigned_to_id: "",
+                            priority: "",
+                            status: "",
+                            due_date: "",
+                        });
+                        if (editor) editor.commands.setContent("");
+                    }}
                     disabled={loading}
                 >
                     Clear Form

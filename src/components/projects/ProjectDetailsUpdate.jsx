@@ -73,7 +73,7 @@ const ProjectDetailsUpdate = ({ api }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch("/api/users/all", {
+        fetch("/api/users/managers", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -81,10 +81,10 @@ const ProjectDetailsUpdate = ({ api }) => {
         })
             .then((res) => res.json())
             .then((data) => {
-                const projectManagers = Array.isArray(data)
-                    ? data.filter((user) => user.role_id === 2)
-                    : [];
-                setManagers(projectManagers);
+                setManagers(Array.isArray(data) ? data : []);
+            })
+            .catch((err) => {
+                console.error("Error fetching managers:", err);
             });
     }, []);
 
@@ -102,7 +102,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                     setForm({
                         name: data.name || "",
                         description: data.description || "",
-                        manager_id: data.manager_id || "",
+                        manager_id: String(data.manager_id) || "",
                         status: data.status || "",
                         start_date: data.start_date ? new Date(data.start_date) : null,
                         due_date: data.due_date ? new Date(data.due_date) : null,
@@ -196,7 +196,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                     placeholder="Choose a project"
                     data={
                         projects.map(project => ({
-                            value: project.project_id,
+                            value: String(project.project_id),
                             label: project.name
                         }))
                     }
@@ -240,105 +240,42 @@ const ProjectDetailsUpdate = ({ api }) => {
                         <label htmlFor="description" className="label-style">
                             Description
                         </label>
-                        <div
-                            className="flex flex-wrap gap-2 mb-2 border border-gray-300 p-2 bg-gray-50"
-                            style={{ borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }}
-                        >
+                        <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleBold().run()} disabled={!editor}><b>B</b></button>
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleItalic().run()} disabled={!editor}><i>I</i></button>
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleUnderline().run()} disabled={!editor}><u>U</u></button>
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleBulletList().run()} disabled={!editor}>•</button>
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleOrderedList().run()} disabled={!editor}>1.</button>
+                            <button type="button" onClick={() => editor && editor.chain().focus().toggleBlockquote().run()} disabled={!editor}>❝</button>
                             <button
                                 type="button"
-                                onClick={() => editor && editor.chain().focus().toggleBold().run()}
+                                onClick={() => editor && editor.chain().focus().toggleHighlight().run()}
                                 disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('bold') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Bold"
-                            >
-                                <strong>B</strong>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleItalic().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('italic') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Italic"
-                            >
-                                <em>I</em>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleStrike().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('strike') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Strikethrough"
-                            >
-                                <s>S</s>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleUnderline().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('underline') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Underline"
-                            >
-                                <u>U</u>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleBulletList().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('bulletList') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Bullet List"
-                            >
-                                •
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleOrderedList().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('orderedList') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Ordered List"
-                            >
-                                1.
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => editor && editor.chain().focus().toggleBlockquote().run()}
-                                disabled={!editor}
-                                className={`px-2 py-1 border rounded ${editor && editor.isActive('blockquote') ? 'bg-stone-300' : 'bg-white'
-                                    }`}
-                                title="Blockquote"
-                            >
-                                "
-                            </button>
-                            <div
+                                title="Highlight"
                                 style={{
-                                    position: 'relative',
-                                    display: 'inline-flex',
+                                    background: editor && editor.isActive('highlight') ? '#ffe066' : 'transparent',
+                                    borderRadius: '4px',
+                                    padding: '4px',
+                                    transition: 'background 0.2s',
+                                    display: 'flex',
                                     alignItems: 'center',
-                                    gap: '2px'
+                                    justifyContent: 'center'
                                 }}
                             >
+                                <PiHighlighterDuotone
+                                    size={18}
+                                    color={editor && editor.isActive('highlight') ? '#a16207' : '#555'}
+                                    style={{ transition: 'color 0.2s' }}
+                                />
+                            </button>
+                            <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
                                 <button
                                     type="button"
-                                    disabled={!editor}
                                     onClick={() => colorInputRef.current && colorInputRef.current.click()}
-                                    title="Text Color"
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        padding: '4px 8px',
-                                        border: '1px solid #ccc',
-                                        borderRadius: '4px',
-                                        background: '#fff',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.2s'
-                                    }}
+                                    disabled={!editor}
+                                    title="Pick Color"
+                                    style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
                                 >
-                                    <PiHighlighterDuotone size={18} color="#555" />
                                     <span
                                         style={{
                                             display: 'inline-block',
@@ -408,7 +345,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                         <Select
                             placeholder="Select Manager"
                             data={managers.map((m) => ({
-                                value: m.user_id,
+                                value: String(m.user_id),
                                 label: `${m.first_name} ${m.last_name}`,
                             }))}
                             value={form.manager_id}
@@ -508,14 +445,17 @@ const ProjectDetailsUpdate = ({ api }) => {
                         <button
                             type="button"
                             className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
-                            onClick={() => setForm({
-                                name: "",
-                                description: "",
-                                manager_id: "",
-                                status: "",
-                                start_date: "",
-                                due_date: "",
-                            })}
+                            onClick={() => {
+                                setForm({
+                                    name: "",
+                                    description: "",
+                                    manager_id: "",
+                                    status: "",
+                                    start_date: "",
+                                    due_date: "",
+                                });
+                                if (editor) editor.commands.setContent("");
+                            }}
                             disabled={loading}
                         >
                             Clear Form
@@ -523,9 +463,7 @@ const ProjectDetailsUpdate = ({ api }) => {
                         <button
                             type="submit"
                             className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition"
-                            radius="xl"
-                            size="md"
-                            loading={loading}
+                            disabled={loading}
                         >
                             {loading ? "Updating..." : "Update Project"}
                         </button>

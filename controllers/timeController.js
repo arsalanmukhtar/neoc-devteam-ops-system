@@ -37,7 +37,7 @@ export const createTimeEntry = async (req, res) => {
   }
 };
 
-// --- Get All Time Entries Logic (User's own) ---
+// --- Get All Time Entries Logic (User's own or all for Admin/PM) ---
 export const getAllTimeEntries = async (req, res) => {
   const { task_id, start_date, end_date } = req.query;
   const user_id = req.user.user_id;
@@ -69,10 +69,12 @@ export const getAllTimeEntries = async (req, res) => {
   let params = [];
   let paramCount = 1;
 
+  // Role 3 (Team Members) can only see their own entries
   if (role_id === 3) {
     where.push(`te.user_id = $${paramCount++}`);
     params.push(user_id);
   }
+  // Role 1 (Admin) and Role 2 (PM) can see all entries
 
   if (task_id) {
     where.push(`te.task_id = $${paramCount++}`);

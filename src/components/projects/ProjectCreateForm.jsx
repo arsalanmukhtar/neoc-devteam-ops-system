@@ -50,7 +50,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        fetch("/api/users/all", {
+        fetch("/api/users/managers", {
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
@@ -58,10 +58,10 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
         })
             .then((res) => res.json())
             .then((data) => {
-                const projectManagers = Array.isArray(data)
-                    ? data.filter((user) => user.role_id === 2)
-                    : [];
-                setManagers(projectManagers);
+                setManagers(Array.isArray(data) ? data : []);
+            })
+            .catch((err) => {
+                console.error("Error fetching managers:", err);
             });
     }, []);
 
@@ -310,7 +310,7 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                 <Select
                     placeholder="Select Manager"
                     data={managers.map((m) => ({
-                        value: m.user_id,
+                        value: String(m.user_id),
                         label: `${m.first_name} ${m.last_name}`,
                     }))}
                     value={form.manager_id}
@@ -410,14 +410,17 @@ const ProjectCreateForm = ({ api = [], onCreated }) => {
                 <button
                     type="button"
                     className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
-                    onClick={() => setForm({
-                        name: "",
-                        description: "",
-                        manager_id: "",
-                        status: "",
-                        start_date: "",
-                        due_date: "",
-                    })}
+                    onClick={() => {
+                        setForm({
+                            name: "",
+                            description: "",
+                            manager_id: "",
+                            status: "",
+                            start_date: "",
+                            due_date: "",
+                        });
+                        if (editor) editor.commands.setContent("");
+                    }}
                     disabled={loading}
                 >
                     Clear Form
