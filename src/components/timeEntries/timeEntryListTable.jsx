@@ -10,7 +10,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import { PiHighlighterDuotone } from "react-icons/pi";
 import { IoMdClose } from "react-icons/io";
-import { formatDateTime } from '@src/utils/dateFormatter';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 // const baseURL = 'http://localhost:3000';
 
@@ -38,6 +38,8 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
     const [saveLoading, setSaveLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [feedbackModalOpened, setFeedbackModalOpened] = useState(false);
+    const [feedbackModalContent, setFeedbackModalContent] = useState('');
     const colorInputRef = useRef();
 
     useEffect(() => {
@@ -74,7 +76,6 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
     // Only allow editing if the current user is the creator (roleId === 3 and userId matches entry.user_id)
     const canEditEntry = (entry) => {
         if (!entry) return false;
-        console.log('roleId:', roleId, 'userId:', userId, 'entry.user_id:', entry.user_id);
         return roleId === 3 && String(userId) === String(entry.user_id);
     };
 
@@ -238,6 +239,45 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                     const value = cell.getValue();
                     return <span>{value ? Number(value).toFixed(2) : '-'}</span>;
                 },
+            },
+            {
+                accessorKey: 'feedback',
+                header: 'Feedback',
+                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
+                Cell: ({ cell, row }) => {
+                    const feedback = cell.getValue();
+                    return (
+                        <div
+                            style={{
+                                maxWidth: "200px",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                cursor: feedback ? "pointer" : "default",
+                                color: feedback ? "#2563eb" : "#888",
+                                fontWeight: feedback ? 500 : 400,
+                                transition: "color 0.2s"
+                            }}
+                            title={feedback ? "Click to view full feedback" : "No feedback"}
+                            onClick={() => {
+                                if (feedback) {
+                                    setFeedbackModalContent(feedback);
+                                    setFeedbackModalOpened(true);
+                                }
+                            }}
+                        >
+                            <div
+                                style={{
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    maxWidth: "190px"
+                                }}
+                                dangerouslySetInnerHTML={{ __html: feedback || "-" }}
+                            />
+                        </div>
+                    );
+                }
             },
         ],
         [roleId, userId, notesEditor]
@@ -533,6 +573,40 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Feedback Modal */}
+            <Modal
+                opened={feedbackModalOpened}
+                onClose={() => setFeedbackModalOpened(false)}
+                title={
+                    <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
+                        <span className='text-stone-700 text-2xl'>Reviewer Feedback</span>
+                    </div>
+                }
+                centered
+                size="lg"
+                overlayProps={{ blur: 4 }}
+                className='sidebar-scroll'
+            >
+                <div className="p-4 bg-white rounded-lg">
+                    <div
+                        className="
+                            tiptap
+                            border border-gray-200
+                            rounded
+                            p-4
+                            bg-gray-50
+                            text-gray-700
+                            h-40
+                            overflow-y-auto
+                            sidebar-scroll
+                        "
+                        dangerouslySetInnerHTML={{
+                            __html: feedbackModalContent || "No feedback provided.",
+                        }}
+                    />
+                </div>
             </Modal>
         </>
     );

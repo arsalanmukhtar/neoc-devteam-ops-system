@@ -14,7 +14,7 @@ import { formatDateTime } from '@src/utils/dateFormatter';
 
 const priorityOptions = [
     { value: "low", label: "Low", color: "#60a5fa" },
-    { value: "medium", label: "Medium", color: "#eca900" },
+    { value: "medium", label: "medium", color: "#eca900" },
     { value: "high", label: "High", color: "#ef4444" },
 ];
 
@@ -399,9 +399,20 @@ const RequestListTable = () => {
                             <div className="text-xs text-gray-500 mb-2">User: {feedbackRequest.user_first_name} {feedbackRequest.user_last_name}</div>
                         </div>
                         <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-1">Feedback Notes</label>
+                            <label className="text-sm font-semibold text-gray-700 mb-1">
+                                Feedback Notes
+                            </label>
+
                             <div className="border border-gray-300 rounded-lg p-2 bg-gray-50 mb-2">
-                                <EditorContent editor={feedbackEditor} className="tiptap" />
+                                <EditorContent
+                                editor={feedbackEditor}
+                                className="
+                                    tiptap
+                                    max-h-56
+                                    overflow-y-auto
+                                    sidebar-scroll
+                                "
+                                />
                             </div>
                         </div>
                         <div className="flex justify-end gap-4">

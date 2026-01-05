@@ -25,7 +25,7 @@ const statusOptions = [
 
 const priorityOptions = [
     { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
+    { value: "medium", label: "medium" },
     { value: "high", label: "High" },
 ];
 

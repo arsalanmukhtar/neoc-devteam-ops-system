@@ -14,7 +14,7 @@ import { IoMdClose } from "react-icons/io";
 
 const priorityOptions = [
     { value: "low", label: "Low", color: "#60a5fa" },      // blue
-    { value: "medium", label: "Medium", color: "#eca900" }, // yellow
+    { value: "medium", label: "medium", color: "#eca900" }, // yellow
     { value: "high", label: "High", color: "#ef4444" },     // red
 ];
 

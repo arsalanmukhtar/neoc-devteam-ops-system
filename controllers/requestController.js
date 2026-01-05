@@ -52,6 +52,7 @@ export const getTimeEntryRequests = async (req, res) => {
 export const acceptTimeEntryRequest = async (req, res) => {
   const { id } = req.params;
   const { user_id } = req.user; // reviewer
+  const { review_comment } = req.body; // feedback from reviewer
   try {
     // Get the request
     const requestRes = await pool.query(
@@ -74,7 +75,8 @@ export const acceptTimeEntryRequest = async (req, res) => {
                     end_time = $3,
                     notes = $4,
                     priority = $5,
-                    status = 'accepted'
+                    status = 'accepted',
+                    feedback = $7
                  WHERE entry_id = $6`,
         [
           request.task_id,
@@ -83,13 +85,14 @@ export const acceptTimeEntryRequest = async (req, res) => {
           request.notes,
           request.priority,
           request.entry_id,
+          review_comment || null,
         ]
       );
     } else {
       // Insert new time entry with status='accepted'
       await pool.query(
-        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
-                 VALUES ($1, $2, $3, $4, $5, $6, 'accepted')`,
+        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status, feedback)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'accepted', $7)`,
         [
           request.user_id,
           request.task_id,
@@ -97,14 +100,15 @@ export const acceptTimeEntryRequest = async (req, res) => {
           request.end_time,
           request.notes,
           request.priority,
+          review_comment || null,
         ]
       );
     }
 
     // Update request status to accepted
     await pool.query(
-      `UPDATE requests SET status = 'accepted', reviewed_by = $1, reviewed_at = NOW() WHERE request_id = $2`,
-      [user_id, id]
+      `UPDATE requests SET status = 'accepted', reviewed_by = $1, reviewed_at = NOW(), review_comment = $2 WHERE request_id = $3`,
+      [user_id, review_comment || "", id]
     );
 
     res.json({ message: "Request accepted and time entry processed." });
@@ -133,18 +137,19 @@ export const rejectTimeEntryRequest = async (req, res) => {
     const request = requestRes.rows[0];
 
     if (request.entry_id) {
-      // Update existing time entry status to rejected (don't change the time data)
+      // Update existing time entry status to rejected (don't change the time data) and add feedback
       await pool.query(
         `UPDATE time_entries SET
-                    status = 'rejected'
+                    status = 'rejected',
+                    feedback = $2
                  WHERE entry_id = $1`,
-        [request.entry_id]
+        [request.entry_id, review_comment || null]
       );
     } else {
       // Insert new time entry with status='rejected' so user can see it was rejected
       await pool.query(
-        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
-                 VALUES ($1, $2, $3, $4, $5, $6, 'rejected')`,
+        `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status, feedback)
+                 VALUES ($1, $2, $3, $4, $5, $6, 'rejected', $7)`,
         [
           request.user_id,
           request.task_id,
@@ -152,6 +157,7 @@ export const rejectTimeEntryRequest = async (req, res) => {
           request.end_time,
           request.notes,
           request.priority,
+          review_comment || null,
         ]
       );
     }

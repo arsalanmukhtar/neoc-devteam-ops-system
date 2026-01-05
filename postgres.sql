@@ -83,7 +83,7 @@ CREATE TABLE "tasks" (
     -- Person responsible (FK to Users)
     assigned_to_id UUID REFERENCES "users"(user_id) ON DELETE SET NULL,
     -- Simple ENUM-like priority and status
-    priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium',
     status VARCHAR(50) NOT NULL DEFAULT 'To Do',
     due_date DATE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -106,7 +106,7 @@ CREATE TABLE "time_entries" (
     task_id UUID NOT NULL REFERENCES "tasks"(task_id) ON DELETE CASCADE,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    priority VARCHAR(50) NOT NULL DEFAULT 'Medium',
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium',
     -- Duration will be calculated, but storing it is often helpful for reports
     duration DECIMAL(10, 2) GENERATED ALWAYS AS (EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) STORED,
     notes TEXT,
@@ -114,9 +114,11 @@ CREATE TABLE "time_entries" (
 );
 
 -- Add priority column if it doesn't exist
-ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS priority VARCHAR (50) NOT NULL DEFAULT 'Medium';
+ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS priority VARCHAR (50) NOT NULL DEFAULT 'medium';
 
 ALTER TABLE "time_entries" ADD COLUMN IF NOT EXISTS status VARCHAR (20) NOT NULL DEFAULT 'pending';
+
+ALTER TABLE time_entries ADD COLUMN feedback TEXT;
 
 -- Update existing entries to 'accepted' status (assuming they were already approved)
 UPDATE "time_entries" SET status = 'accepted' WHERE status = 'pending';
@@ -143,7 +145,7 @@ CREATE TABLE "requests" (
     reviewed_by UUID REFERENCES "users"(user_id),
     reviewed_at TIMESTAMP,
     review_comment TEXT,
-    priority VARCHAR(50) NOT NULL DEFAULT 'Medium'
+    priority VARCHAR(50) NOT NULL DEFAULT 'medium'
 );
 
 -- ALTER TABLE "requests" ADD COLUMN entry_id UUID REFERENCES "time_entries"(entry_id);
