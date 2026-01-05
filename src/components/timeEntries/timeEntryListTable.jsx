@@ -15,15 +15,15 @@ import { formatDateTime } from '../../utils/dateFormatter';
 // const baseURL = 'http://localhost:3000';
 
 const priorityColors = {
-    low: "#60a5fa",      // blue
-    medium: "#eca900",   // yellow
-    high: "#ef4444"      // red
+    low: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },      // Blue
+    medium: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // Amber
+    high: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },     // Red
 };
 
 const statusColors = {
-    pending: { bg: "#fffbeb", text: "#78350f" },    // very light amber
-    accepted: { bg: "#f0fdf4", text: "#14532d" },   // very light green
-    rejected: { bg: "#fef2f2", text: "#7f1d1d" }    // very light red
+    pending: { bg: '#fef3c7', text: '#78350f', border: '#fcd34d' },        // Amber
+    accepted: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },       // Green
+    rejected: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }        // Red
 };
 
 const TimeEntryListTable = ({ api = "/api/time/list" }) => {
@@ -137,6 +137,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
                     <span
+                        className="text-xs"
                         style={{
                             color: '#2563eb',
                             cursor: canEditEntry(row.original) ? 'pointer' : 'not-allowed',
@@ -165,21 +166,27 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 header: 'Priority',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ cell }) => {
-                    const value = cell.getValue();
-                    const color = priorityColors[value?.toLowerCase()] || "#aaa";
-                    const label = value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
+                    const value = cell.getValue()?.toLowerCase();
+                    const colors = priorityColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
+                    const label = cell.getValue() ? cell.getValue().charAt(0).toUpperCase() + cell.getValue().slice(1) : "-";
                     return (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{
-                                display: 'inline-block',
-                                width: '12px',
-                                height: '12px',
-                                borderRadius: '50%',
-                                background: color,
-                                marginRight: '6px',
-                                border: '1px solid #ccc'
-                            }} />
-                            <span style={{ color, fontWeight: 500 }}>{label}</span>
+                        <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
+                            {label}
                         </span>
                     );
                 }
@@ -189,30 +196,38 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 header: 'Status',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ cell }) => {
-                    const value = cell.getValue() || 'pending';
-                    const colors = statusColors[value.toLowerCase()] || statusColors.pending;
-                    const label = value.charAt(0).toUpperCase() + value.slice(1);
+                    const value = cell.getValue()?.toLowerCase() || 'pending';
+                    const colors = statusColors[value] || statusColors.pending;
+                    const label = cell.getValue() ? cell.getValue().charAt(0).toUpperCase() + cell.getValue().slice(1) : 'Pending';
                     return (
-                        <span style={{
-                            display: 'inline-block',
-                            padding: '4px 12px',
-                            borderRadius: '12px',
-                            background: colors.bg,
-                            color: colors.text,
-                            fontWeight: 600,
-                            fontSize: '0.875rem'
-                        }}>
+                        <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
                             {label}
                         </span>
                     );
                 }
             },
             {
-                accessorKey: 'user_name',
+                accessorFn: (row) => `${row.user_first_name} ${row.user_last_name}`,
+                id: 'user_name',
                 header: 'User',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
-                    <span className="text-base text-gray-700">
+                    <span className="text-xs text-gray-700">
                         {row.original.user_first_name && row.original.user_last_name
                             ? `${row.original.user_first_name} ${row.original.user_last_name}`
                             : '-'}
@@ -223,13 +238,13 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 accessorKey: 'start_time',
                 header: 'Start Time',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{formatDateTime(cell.getValue())}</span>,
+                Cell: ({ cell }) => <span className="text-xs text-gray-700">{formatDateTime(cell.getValue())}</span>,
             },
             {
                 accessorKey: 'end_time',
                 header: 'End Time',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{formatDateTime(cell.getValue())}</span>,
+                Cell: ({ cell }) => <span className="text-xs text-gray-700">{formatDateTime(cell.getValue())}</span>,
             },
             {
                 accessorKey: 'duration',
@@ -237,7 +252,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ cell }) => {
                     const value = cell.getValue();
-                    return <span>{value ? Number(value).toFixed(2) : '-'}</span>;
+                    return <span className="text-xs text-gray-700">{value ? Number(value).toFixed(2) : '-'}</span>;
                 },
             },
             {
@@ -248,6 +263,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                     const feedback = cell.getValue();
                     return (
                         <div
+                            className="text-xs"
                             style={{
                                 maxWidth: "200px",
                                 whiteSpace: "nowrap",
@@ -289,21 +305,16 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
         enableColumnOrdering: true,
         enablePagination: true,
         mantineTableProps: {
-            striped: false,
+            striped: true,
             highlightOnHover: true,
             withColumnBorders: true,
             style: { background: '#f8fafc', borderRadius: '8px' },
         },
-        mantineTableBodyRowProps: ({ row }) => {
-            const status = row.original.status?.toLowerCase() || 'pending';
-            const colors = statusColors[status] || statusColors.pending;
-            return {
-                style: {
-                    background: colors.bg,
-                    transition: 'background 0.2s',
-                },
-            };
-        },
+        mantineTableBodyRowProps: ({ row }) => ({
+            style: {
+                background: '#f8fafc',
+            },
+        }),
         mantineTableBodyCellProps: {
             sx: { background: 'inherit' },
         },
@@ -360,10 +371,22 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Priority</span>
-                                <span style={{
-                                    color: priorityColors[selectedEntry.priority?.toLowerCase()] || "#aaa",
-                                    fontWeight: 600
-                                }}>
+                                <span 
+                                    className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
+                                    style={{
+                                        backgroundColor: priorityColors[selectedEntry.priority?.toLowerCase()]?.bg || '#f3f4f6',
+                                        color: priorityColors[selectedEntry.priority?.toLowerCase()]?.text || '#6b7280',
+                                        border: `1px solid ${priorityColors[selectedEntry.priority?.toLowerCase()]?.border || '#d1d5db'}`,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            backgroundColor: priorityColors[selectedEntry.priority?.toLowerCase()]?.text || '#6b7280',
+                                        }}
+                                    />
                                     {selectedEntry.priority ? selectedEntry.priority.charAt(0).toUpperCase() + selectedEntry.priority.slice(1) : '-'}
                                 </span>
                             </div>
@@ -371,16 +394,22 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
-                                <span style={{
-                                    display: 'inline-block',
-                                    padding: '4px 12px',
-                                    borderRadius: '12px',
-                                    background: statusColors[selectedEntry.status?.toLowerCase()]?.bg || statusColors.pending.bg,
-                                    color: statusColors[selectedEntry.status?.toLowerCase()]?.text || statusColors.pending.text,
-                                    fontWeight: 600,
-                                    fontSize: '0.875rem',
-                                    width: 'fit-content'
-                                }}>
+                                <span
+                                    className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
+                                    style={{
+                                        backgroundColor: statusColors[selectedEntry.status?.toLowerCase()]?.bg || statusColors.pending.bg,
+                                        color: statusColors[selectedEntry.status?.toLowerCase()]?.text || statusColors.pending.text,
+                                        border: `1px solid ${statusColors[selectedEntry.status?.toLowerCase()]?.border || statusColors.pending.border}`,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            backgroundColor: statusColors[selectedEntry.status?.toLowerCase()]?.text || statusColors.pending.text,
+                                        }}
+                                    />
                                     {selectedEntry.status ? selectedEntry.status.charAt(0).toUpperCase() + selectedEntry.status.slice(1) : 'Pending'}
                                 </span>
                             </div>
@@ -581,7 +610,7 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
                 onClose={() => setFeedbackModalOpened(false)}
                 title={
                     <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
-                        <span className='text-stone-700 text-2xl'>Reviewer Feedback</span>
+                        <span className='text-stone-700 text-xl'>Reviewer Feedback</span>
                     </div>
                 }
                 centered
@@ -591,20 +620,8 @@ const TimeEntryListTable = ({ api = "/api/time/list" }) => {
             >
                 <div className="p-4 bg-white rounded-lg">
                     <div
-                        className="
-                            tiptap
-                            border border-gray-200
-                            rounded
-                            p-4
-                            bg-gray-50
-                            text-gray-700
-                            h-40
-                            overflow-y-auto
-                            sidebar-scroll
-                        "
-                        dangerouslySetInnerHTML={{
-                            __html: feedbackModalContent || "No feedback provided.",
-                        }}
+                        className="text-xs tiptap border border-gray-200 rounded p-4 bg-gray-50 text-gray-700 min-h-[100px] max-h-80 overflow-y-auto sidebar-scroll"
+                        dangerouslySetInnerHTML={{ __html: feedbackModalContent || 'No feedback provided.' }}
                     />
                 </div>
             </Modal>

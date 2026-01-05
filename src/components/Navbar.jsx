@@ -9,24 +9,47 @@ const roles = [
 ];
 
 const Navbar = ({ selectedRole, setSelectedRole, isAuthenticated, onLogout }) => (
-    <nav className="sticky top-0 z-20 w-full flex items-center justify-between bg-[#FBFCFA] px-6 h-20 shadow">
-        <img src={ndmaLogo} alt="NDMA Logo" className="h-12 w-12 rounded-full" />
-        <h1 className="navtitle flex-1 text-center text-stone-800 font-semibold">
-            NEOC - Tech (EW) Task Management System
-        </h1>
-        <div className="flex gap-2 items-center">
-            {/* {!isAuthenticated && roles.map(role => (
-                <button
-                    key={role.value}
-                    className={`px-4 py-2 border border-stone-300 rounded-full font-light text-sm transition ${selectedRole === role.value ? 'bg-red-400 text-white' : 'bg-white opacity-80 text-stone-700'}`}
-                    onClick={() => setSelectedRole(role.value)}
-                >
-                    {role.label}
-                </button>
-            ))} */}
-            {isAuthenticated && (
-                <UserInfo onLogout={onLogout} />
-            )}
+    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between px-6 h-20">
+            {/* Logo Section */}
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-400 rounded-full blur-sm opacity-30"></div>
+                    <img 
+                        src={ndmaLogo} 
+                        alt="NDMA Logo" 
+                        className="relative h-12 w-12 rounded-full ring-2 ring-blue-100 shadow-md" 
+                    />
+                </div>
+            </div>
+
+            {/* Title Section */}
+            <div className="flex-1 flex justify-center px-4">
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent tracking-tight">
+                    NEOC - Tech (EW) Task Management System
+                </h1>
+            </div>
+
+            {/* User Info Section */}
+            <div className="flex gap-2 items-center">
+                {/* Role Selection Buttons - Commented out as in original */}
+                {/* {!isAuthenticated && roles.map(role => (
+                    <button
+                        key={role.value}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                            selectedRole === role.value 
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                        onClick={() => setSelectedRole(role.value)}
+                    >
+                        {role.label}
+                    </button>
+                ))} */}
+                {isAuthenticated && (
+                    <UserInfo onLogout={onLogout} />
+                )}
+            </div>
         </div>
     </nav>
 );

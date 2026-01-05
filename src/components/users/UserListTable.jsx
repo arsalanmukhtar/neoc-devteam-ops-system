@@ -16,6 +16,11 @@ const statusOptions = [
     { value: 'false', label: 'Inactive' },
 ];
 
+const statusColors = {
+    active: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },     // Green
+    inactive: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },   // Red
+};
+
 const UserListTable = ({ api = "/api/users/all" }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -84,6 +89,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
                     <span
+                        className='text-xs'
                         style={{
                             color: '#2563eb',
                             cursor: 'pointer',
@@ -103,25 +109,25 @@ const UserListTable = ({ api = "/api/users/all" }) => {
                 accessorKey: 'last_name',
                 header: 'Last Name',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span className='text-xs text-gray-700'>{cell.getValue()}</span>,
             },
             {
                 accessorKey: 'email',
                 header: 'Email',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span className='text-xs text-gray-700'>{cell.getValue()}</span>,
             },
             {
                 accessorKey: 'role_id',
                 header: 'Role ID',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span className='text-xs text-gray-700'>{cell.getValue()}</span>,
             },
             {
                 accessorKey: 'role_name',
                 header: 'Role Name',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span className='text-xs text-gray-700'>{cell.getValue()}</span>,
             },
             {
                 accessorKey: 'is_active',
@@ -129,14 +135,27 @@ const UserListTable = ({ api = "/api/users/all" }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ cell }) => {
                     const value = cell.getValue();
+                    const isActive = value === true || value === 'true';
+                    const colors = isActive ? statusColors.active : statusColors.inactive;
+                    const label = isActive ? 'Active' : 'Inactive';
                     return (
                         <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
                             style={{
-                                color: value === true || value === 'true' ? '#22c55e' : '#ef4444', // green for active, red for inactive
-                                fontWeight: 'bold'
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
                             }}
                         >
-                            {value === true || value === 'true' ? 'Active' : 'Inactive'}
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
+                            {label}
                         </span>
                     );
                 },
@@ -161,7 +180,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
         },
         mantineTableBodyRowProps: ({ row }) => ({
             style: {
-                background: row.original.is_active === false ? '#fecaca' : '#f8fafc', // red-100 if inactive
+                background: '#f8fafc',
             },
         }),
         mantineTableBodyCellProps: {
@@ -222,7 +241,7 @@ const UserListTable = ({ api = "/api/users/all" }) => {
         setSuccess('');
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch(`${baseURL}/api/users/delete/${selectedUser.user_id}`, {
+            const res = await fetch(`/api/users/delete/${selectedUser.user_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

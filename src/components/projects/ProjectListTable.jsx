@@ -5,13 +5,21 @@ import { formatDate } from '@src/utils/dateFormatter';
 
 // const baseURL = 'http://localhost:3000';
 
-// Status mapping and colors
-const statusMap = {
-    active: { label: 'Active', color: '#2563eb' },        // blue
-    inactive: { label: 'Inactive', color: '#ef4444' },    // red
-    in_progress: { label: 'In Progress', color: '#f59e0b' }, // amber
-    planning: { label: 'Planning', color: '#06b6d4' },    // cyan
-    completed: { label: 'Completed', color: '#22c55e' },  // green
+// Status colors with badge styling
+const statusColors = {
+    active: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },        // Blue
+    inactive: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },      // Red
+    in_progress: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // Amber
+    planning: { bg: '#cffafe', text: '#155e75', border: '#67e8f9' },      // Cyan
+    completed: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },     // Green
+};
+
+const statusLabels = {
+    active: 'Active',
+    inactive: 'Inactive',
+    in_progress: 'In Progress',
+    planning: 'Planning',
+    completed: 'Completed',
 };
 
 const ProjectListTable = ({ api }) => {
@@ -44,6 +52,7 @@ const ProjectListTable = ({ api }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
                     <span
+                        className="text-xs"
                         style={{
                             color: '#2563eb',
                             cursor: 'pointer',
@@ -64,15 +73,27 @@ const ProjectListTable = ({ api }) => {
                 header: 'Status',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ cell }) => {
-                    const value = cell.getValue();
-                    const status = statusMap[value] || { label: value, color: '#44403c' };
+                    const value = cell.getValue()?.toLowerCase();
+                    const colors = statusColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
+                    const label = statusLabels[value] || cell.getValue();
                     return (
-                        <span style={{
-                            color: status.color,
-                            fontWeight: 'bold',
-                            textTransform: 'capitalize'
-                        }}>
-                            {status.label}
+                        <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
+                            {label}
                         </span>
                     );
                 },
@@ -151,42 +172,55 @@ const ProjectListTable = ({ api }) => {
                     <div className="p-4 bg-white rounded-lg shadow space-y-6">
                         {/* Project Name */}
                         <div className="flex flex-col">
-                            <span className="span-label-style">Project Name</span>
+                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Project Name</span>
                             <span className="text-lg font-bold text-blue-400">{selectedProject.name}</span>
                         </div>
                         {/* Description */}
                         <div className="sidebar-scroll flex flex-col h-96 overflow-y-auto">
-                            <span className="span-label-style">Description</span>
+                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Description</span>
                             <div
                                 className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
                                 dangerouslySetInnerHTML={{ __html: selectedProject.description }}
                             />
                         </div>
-                        {/* Manager */}
+                        {/* Manager and Status */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="span-label-style">Manager</span>
-                                <span className="text-base text-gray-700">{selectedProject.manager_first_name} {selectedProject.manager_last_name}</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Manager</span>
+                                <span className="text-base text-gray-700">
+                                    {selectedProject.manager_first_name} {selectedProject.manager_last_name}
+                                </span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="span-label-style">Status</span>
-                                <span style={{
-                                    color: statusMap[selectedProject.status]?.color || '#44403c',
-                                    fontWeight: 'bold',
-                                    textTransform: 'capitalize'
-                                }}>
-                                    {statusMap[selectedProject.status]?.label || selectedProject.status}
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
+                                <span
+                                    className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
+                                    style={{
+                                        backgroundColor: statusColors[selectedProject.status?.toLowerCase()]?.bg || '#f3f4f6',
+                                        color: statusColors[selectedProject.status?.toLowerCase()]?.text || '#6b7280',
+                                        border: `1px solid ${statusColors[selectedProject.status?.toLowerCase()]?.border || '#d1d5db'}`,
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
+                                            backgroundColor: statusColors[selectedProject.status?.toLowerCase()]?.text || '#6b7280',
+                                        }}
+                                    />
+                                    {statusLabels[selectedProject.status?.toLowerCase()] || selectedProject.status}
                                 </span>
                             </div>
                         </div>
                         {/* Dates */}
                         <div className="grid grid-cols-2 gap-6">
                             <div className="flex flex-col">
-                                <span className="span-label-style">Start Date</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Date</span>
                                 <span className="text-base text-gray-700">{formatDate(selectedProject.start_date)}</span>
                             </div>
                             <div className="flex flex-col">
-                                <span className="span-label-style">Due Date</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
                                 <span className="text-base text-gray-700">{formatDate(selectedProject.due_date)}</span>
                             </div>
                         </div>

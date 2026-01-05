@@ -264,15 +264,15 @@ const RequestListTable = () => {
                             ) : (
                                 requests.map((req) => (
                                     <tr key={req.request_id}>
-                                        <td className="border-b px-3 py-2">{req.task_title}</td>
-                                        <td className="border-b px-3 py-2">{req.user_first_name} {req.user_last_name}</td>
-                                        <td className="border-b px-3 py-2">{formatDateTime(req.start_time)}</td>
-                                        <td className="border-b px-3 py-2">{formatDateTime(req.end_time)}</td>
-                                        <td className="border-b px-3 py-2 text-center font-semibold">{getDurationHours(req.start_time, req.end_time)}</td>
-                                        <td className="border-b px-3 py-2">
+                                        <td className="border-b text-xs px-3 py-2">{req.task_title}</td>
+                                        <td className="border-b text-xs px-3 py-2">{req.user_first_name} {req.user_last_name}</td>
+                                        <td className="border-b text-xs px-3 py-2">{formatDateTime(req.start_time)}</td>
+                                        <td className="border-b text-xs px-3 py-2">{formatDateTime(req.end_time)}</td>
+                                        <td className="border-b text-xs px-3 py-2 text-center font-semibold">{getDurationHours(req.start_time, req.end_time)}</td>
+                                        <td className="border-b text-xs px-3 py-2">
                                             <button
                                                 onClick={() => handleOpenPriorityModal(req)}
-                                                className="px-3 py-1 rounded-full text-sm font-semibold cursor-pointer hover:opacity-80 transition"
+                                                className="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition"
                                                 style={{
                                                     width: "140px", // fixed width
                                                     display: 'flex',
@@ -352,7 +352,7 @@ const RequestListTable = () => {
                                                     onClick={() => handleAccept(req.request_id)}
                                                 >
                                                     <GoThumbsup
-                                                        size={28}
+                                                        size={20}
                                                         className="text-green-500 group-hover:text-green-700 transition"
                                                     />
                                                 </button>
@@ -362,7 +362,7 @@ const RequestListTable = () => {
                                                     onClick={() => handleReject(req.request_id)}
                                                 >
                                                     <GoThumbsdown
-                                                        size={28}
+                                                        size={20}
                                                         className="text-red-500 group-hover:text-red-700 transition"
                                                     />
                                                 </button>
@@ -407,6 +407,7 @@ const RequestListTable = () => {
                                 <EditorContent
                                 editor={feedbackEditor}
                                 className="
+                                    text-xs
                                     tiptap
                                     max-h-56
                                     overflow-y-auto

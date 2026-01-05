@@ -6,15 +6,15 @@ import { formatDate, formatDateTime } from '@src/utils/dateFormatter';
 // const baseURL = 'http://localhost:3000';
 
 const statusColors = {
-    pending: 'text-yellow-700 font-semibold',
-    in_progress: 'text-blue-700 font-semibold',
-    completed: 'text-green-700 font-semibold',
+    pending: { bg: '#fef3c7', text: '#78350f', border: '#fcd34d' },        // Amber
+    in_progress: { bg: '#dbeafe', text: '#1e3a8a', border: '#93c5fd' },    // Blue
+    completed: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },      // Green
 };
 
 const priorityColors = {
-    high: 'text-red-600 font-semibold',
-    medium: 'text-yellow-600 font-semibold',
-    low: 'text-green-600 font-semibold',
+    low: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },      // Blue
+    medium: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // Amber
+    high: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },     // Red
 };
 
 const statusOptions = [
@@ -25,7 +25,7 @@ const statusOptions = [
 
 const priorityOptions = [
     { value: "low", label: "Low" },
-    { value: "medium", label: "medium" },
+    { value: "medium", label: "Medium" },
     { value: "high", label: "High" },
 ];
 
@@ -72,6 +72,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
                     <span
+                        className='text-xs'
                         style={{
                             color: '#2563eb',
                             cursor: 'pointer',
@@ -94,7 +95,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                 header: 'Assigned To',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
                 Cell: ({ row }) => (
-                    <span className="text-base text-gray-700">
+                    <span className="text-base text-xs text-gray-700">
                         {row.original.assigned_first_name} {row.original.assigned_last_name}
                     </span>
                 ),
@@ -103,33 +104,73 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                 accessorKey: 'project_name',
                 header: 'Project',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{cell.getValue()}</span>,
+                Cell: ({ cell }) => <span className="text-xs text-gray-700">{cell.getValue()}</span>,
             },
             {
                 accessorKey: 'priority',
                 header: 'Priority',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => (
-                    <span className={priorityColors[cell.getValue()]}>
-                        {cell.getValue()?.charAt(0).toUpperCase() + cell.getValue()?.slice(1)}
-                    </span>
-                ),
+                Cell: ({ cell }) => {
+                    const value = cell.getValue()?.toLowerCase();
+                    const colors = priorityColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
+                    const label = cell.getValue()?.charAt(0).toUpperCase() + cell.getValue()?.slice(1);
+                    return (
+                        <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
+                            {label}
+                        </span>
+                    );
+                },
             },
             {
                 accessorKey: 'status',
                 header: 'Status',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => (
-                    <span className={`px-2 py-1 rounded font-semibold ${statusColors[cell.getValue()] || ''}`}>
-                        {cell.getValue()?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </span>
-                ),
+                Cell: ({ cell }) => {
+                    const value = cell.getValue()?.toLowerCase();
+                    const colors = statusColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
+                    const label = cell.getValue()?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    return (
+                        <span
+                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
+                            style={{
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                border: `1px solid ${colors.border}`,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    backgroundColor: colors.text,
+                                }}
+                            />
+                            {label}
+                        </span>
+                    );
+                },
             },
             {
                 accessorKey: 'due_date',
                 header: 'Due Date',
                 mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span>{formatDate(cell.getValue())}</span>,
+                Cell: ({ cell }) => <span className="text-xs text-gray-700">{formatDate(cell.getValue())}</span>,
             },
         ],
         []
@@ -306,7 +347,22 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                                         className="w-full"
                                     />
                                 ) : (
-                                    <span className={priorityColors[selectedTask.priority]}>
+                                    <span 
+                                        className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
+                                        style={{
+                                            backgroundColor: priorityColors[selectedTask.priority?.toLowerCase()]?.bg || '#f3f4f6',
+                                            color: priorityColors[selectedTask.priority?.toLowerCase()]?.text || '#6b7280',
+                                            border: `1px solid ${priorityColors[selectedTask.priority?.toLowerCase()]?.border || '#d1d5db'}`,
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: '6px',
+                                                height: '6px',
+                                                borderRadius: '50%',
+                                                backgroundColor: priorityColors[selectedTask.priority?.toLowerCase()]?.text || '#6b7280',
+                                            }}
+                                        />
                                         {selectedTask.priority?.charAt(0).toUpperCase() + selectedTask.priority?.slice(1)}
                                     </span>
                                 )}
@@ -332,7 +388,7 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
                         <div className="grid grid-cols-2 gap-6">
                             {/* Due Date */}
                             <div className="flex flex-col">
-                                <span className="span-label-style">Due Date</span>
+                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
                                 <span className="text-base text-gray-700">{formatDate(selectedTask.due_date)}</span>
                             </div>
                             {/* Created At */}

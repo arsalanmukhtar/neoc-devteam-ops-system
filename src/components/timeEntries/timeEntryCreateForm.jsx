@@ -13,9 +13,9 @@ import { IoMdClose } from "react-icons/io";
 // const baseURL = 'http://localhost:3000';
 
 const priorityOptions = [
-    { value: "low", label: "Low", color: "#60a5fa" },      // blue
-    { value: "medium", label: "medium", color: "#eca900" }, // yellow
-    { value: "high", label: "High", color: "#ef4444" },     // red
+    { value: "low", label: "Low" },
+    { value: "medium", label: "Medium" },
+    { value: "high", label: "High" },
 ];
 
 const TimeEntryCreateForm = ({ onCreated }) => {
@@ -84,8 +84,12 @@ const TimeEntryCreateForm = ({ onCreated }) => {
         setError('');
         setSuccess('');
         const token = localStorage.getItem("token");
+        
+        // Role 1 and 2 create directly, Role 3 goes through requests
+        const endpoint = roleId === 3 ? '/api/requests/time-entry' : '/api/time/create';
+        
         try {
-            const res = await fetch(`/api/requests/time-entry`, {
+            const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -99,7 +103,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
             });
             const data = await res.json();
             if (res.ok) {
-                setSuccess('Time entry request submitted for approval!');
+                setSuccess(roleId === 3 ? 'Time entry request submitted for approval!' : 'Time entry created successfully!');
                 setForm({
                     task_id: '',
                     priority: '',
@@ -110,7 +114,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                 if (editor) editor.commands.setContent("");
                 if (onCreated) onCreated(data);
             } else {
-                setError(data.error || 'Request submission failed');
+                setError(data.error || 'Submission failed');
             }
         } catch {
             setError('Network error');
@@ -139,7 +143,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                         name="task_id"
                         placeholder="Select Task"
                         data={tasks.map(t => ({
-                            value: t.task_id,
+                            value: String(t.task_id),
                             label: t.title || `Task #${t.task_id}`
                         }))}
                         radius="xl"
@@ -161,27 +165,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                         id="priority"
                         name="priority"
                         placeholder="Select Priority"
-                        data={priorityOptions.map(opt => ({
-                            value: opt.value,
-                            label: (
-                                <span style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                }}>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        width: '12px',
-                                        height: '12px',
-                                        borderRadius: '50%',
-                                        background: opt.color,
-                                        marginRight: '6px',
-                                        border: '1px solid #ccc'
-                                    }} />
-                                    <span style={{ color: opt.color, fontWeight: 500 }}>{opt.label}</span>
-                                </span>
-                            )
-                        }))}
+                        data={priorityOptions}
                         radius="xl"
                         size="md"
                         value={form.priority}

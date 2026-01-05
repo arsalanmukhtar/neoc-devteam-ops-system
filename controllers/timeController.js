@@ -22,9 +22,9 @@ export const createTimeEntry = async (req, res) => {
   try {
     const result = await pool.query(
       `INSERT INTO time_entries (user_id, task_id, start_time, end_time, notes, priority, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+             VALUES ($1, $2, $3, $4, $5, $6, 'accepted')
              RETURNING entry_id, task_id, start_time, end_time, duration, priority, status`,
-      [user_id, task_id, start_time, end_time, notes, priority || 'medium']
+      [user_id, task_id, start_time, end_time, notes || null, priority || 'medium']
     );
 
     res.status(201).json({
