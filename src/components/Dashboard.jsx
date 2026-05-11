@@ -20,7 +20,7 @@ const Dashboard = () => {
     }, [roleId, activeTab, allowedTabs, defaultTab]);
 
     return (
-        <div className="flex bg-white" style={{ height: 'calc(100vh - 4rem)' }}>
+        <div className="flex bg-white dark:bg-gray-950" style={{ height: 'calc(100vh - 4rem)' }}>
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} roleId={roleId} />
             <Workspace activeTab={activeTab} roleId={roleId} />
         </div>

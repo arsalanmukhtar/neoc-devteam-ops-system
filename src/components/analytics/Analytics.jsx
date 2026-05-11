@@ -99,6 +99,14 @@ const Analytics = ({ activeTab }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [expandedChart, setExpandedChart] = useState(null);
+    // bump on theme toggle so chart options refresh
+    const [, setThemeTick] = useState(0);
+
+    useEffect(() => {
+        const handler = () => setThemeTick((t) => t + 1);
+        window.addEventListener('themechange', handler);
+        return () => window.removeEventListener('themechange', handler);
+    }, []);
 
     const apiEndpoints = {
         users: [
@@ -203,64 +211,76 @@ const Analytics = ({ activeTab }) => {
         fetchAllCharts();
     }, [activeTab, fetchAllCharts]);
 
-    const baseChartOptions = (type) => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                display: true,
-                position: 'bottom',
-                labels: {
-                    font: { size: 12, weight: 500, family: INTER },
-                    color: '#374151',
-                    usePointStyle: true,
-                    pointStyle: 'circle',
-                    padding: 16,
-                    boxWidth: 8,
-                    boxHeight: 8,
+    const isDark = () =>
+        typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('dark');
+
+    const baseChartOptions = (type) => {
+        const dark = isDark();
+        const textColor = dark ? '#d1d5db' : '#374151';
+        const subtleColor = dark ? '#9ca3af' : '#6b7280';
+        const gridColor = dark ? '#1f2937' : '#f3f4f6';
+        const borderColor = dark ? '#374151' : '#e5e7eb';
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 12, weight: 500, family: INTER },
+                        color: textColor,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 16,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                    },
+                },
+                tooltip: {
+                    backgroundColor: dark ? '#030712' : '#111827',
+                    titleColor: '#fff',
+                    bodyColor: '#e5e7eb',
+                    borderColor: dark ? '#374151' : 'transparent',
+                    borderWidth: dark ? 1 : 0,
+                    padding: 10,
+                    cornerRadius: 6,
+                    titleFont: { size: 12, weight: 600, family: INTER },
+                    bodyFont: { size: 12, weight: 400, family: INTER },
+                    displayColors: true,
+                    boxPadding: 4,
+                    caretSize: 6,
                 },
             },
-            tooltip: {
-                backgroundColor: '#111827',
-                titleColor: '#fff',
-                bodyColor: '#e5e7eb',
-                borderColor: 'transparent',
-                padding: 10,
-                cornerRadius: 6,
-                titleFont: { size: 12, weight: 600, family: INTER },
-                bodyFont: { size: 12, weight: 400, family: INTER },
-                displayColors: true,
-                boxPadding: 4,
-                caretSize: 6,
-            },
-        },
-        scales:
-            type !== 'pie'
-                ? {
-                      x: {
-                          ticks: {
-                              font: { size: 11, weight: 500, family: INTER },
-                              color: '#6b7280',
-                              maxRotation: 35,
-                              minRotation: 0,
-                              padding: 6,
+            scales:
+                type !== 'pie'
+                    ? {
+                          x: {
+                              ticks: {
+                                  font: { size: 11, weight: 500, family: INTER },
+                                  color: subtleColor,
+                                  maxRotation: 35,
+                                  minRotation: 0,
+                                  padding: 6,
+                              },
+                              grid: { display: false },
+                              border: { color: borderColor },
                           },
-                          grid: { display: false },
-                          border: { color: '#e5e7eb' },
-                      },
-                      y: {
-                          min: 0,
-                          ticks: {
-                              font: { size: 11, weight: 500, family: INTER },
-                              color: '#6b7280',
-                              padding: 6,
+                          y: {
+                              min: 0,
+                              ticks: {
+                                  font: { size: 11, weight: 500, family: INTER },
+                                  color: subtleColor,
+                                  padding: 6,
+                              },
+                              grid: { color: gridColor, drawTicks: false },
+                              border: { display: false },
                           },
-                          grid: { color: '#f3f4f6', drawTicks: false },
-                          border: { display: false },
-                      },
-                  }
-                : undefined,
-    });
+                      }
+                    : undefined,
+        };
+    };
 
     const renderChart = (data, type, label) => {
         if (!data || data.length === 0) {
@@ -337,7 +357,7 @@ const Analytics = ({ activeTab }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
                 <Spinner size={16} />
                 <span className="text-sm">Loading analytics…</span>
             </div>
@@ -356,17 +376,17 @@ const Analytics = ({ activeTab }) => {
 
     if (expandedChart) {
         return (
-            <div className="bg-white rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+            <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
                     <div>
-                        <h3 className="text-base font-semibold text-gray-900 tracking-tight">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
                             {expandedChart.label}
                         </h3>
-                        <p className="text-xs text-gray-500 mt-0.5">Expanded view</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Expanded view</p>
                     </div>
                     <button
                         onClick={() => setExpandedChart(null)}
-                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100 transition-colors"
                         title="Collapse"
                     >
                         <LuMinimize2 size={16} />
@@ -386,7 +406,7 @@ const Analytics = ({ activeTab }) => {
     return (
         <div>
             {error && (
-                <div className="mb-4 px-3 py-2.5 rounded-md bg-rose-50 border border-rose-200 text-sm text-rose-900">
+                <div className="mb-4 px-3 py-2.5 rounded-md bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-sm text-rose-900 dark:text-rose-200">
                     {error}
                 </div>
             )}
@@ -395,16 +415,16 @@ const Analytics = ({ activeTab }) => {
                 {endpoints.map((endpoint) => (
                     <div
                         key={endpoint.key}
-                        className="group bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all flex flex-col"
+                        className="group bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm dark:hover:shadow-black/30 transition-all flex flex-col"
                         style={{ minHeight: '320px' }}
                     >
-                        <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-gray-100">
-                            <h4 className="text-sm font-semibold text-gray-900 tracking-tight pr-8">
+                        <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                            <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-50 tracking-tight pr-8">
                                 {endpoint.label}
                             </h4>
                             <button
                                 onClick={() => setExpandedChart(endpoint)}
-                                className="opacity-0 group-hover:opacity-100 -mt-1 -mr-1 p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                                className="opacity-0 group-hover:opacity-100 -mt-1 -mr-1 p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all"
                                 title="Expand"
                             >
                                 <LuMaximize2 size={14} />

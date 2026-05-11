@@ -25,15 +25,15 @@ const ToolbarButton = ({ onClick, active, children, title, disabled }) => (
         disabled={disabled}
         className={`h-7 w-7 inline-flex items-center justify-center rounded-md transition-colors ${
             active
-                ? 'bg-gray-200 text-gray-900'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-50'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
         } disabled:opacity-40 disabled:cursor-not-allowed`}
     >
         {children}
     </button>
 );
 
-const ToolbarDivider = () => <span className="h-4 w-px bg-gray-300 mx-1" />;
+const ToolbarDivider = () => <span className="h-4 w-px bg-gray-300 dark:bg-gray-700 mx-1" />;
 
 const RichTextEditor = ({
     value,
@@ -49,7 +49,7 @@ const RichTextEditor = ({
         onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
         editorProps: {
             attributes: {
-                class: 'tiptap focus:outline-none text-sm text-gray-900 px-3 py-2.5',
+                class: 'tiptap focus:outline-none text-sm text-gray-900 dark:text-gray-100 px-3 py-2.5',
             },
         },
     });
@@ -67,8 +67,8 @@ const RichTextEditor = ({
     if (!editor) return null;
 
     return (
-        <div className="rounded-md border border-gray-300 bg-white transition-colors focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500">
-            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 bg-gray-50 rounded-t-md flex-wrap">
+        <div className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 transition-colors focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/50 focus-within:border-indigo-500 dark:focus-within:border-indigo-400">
+            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 rounded-t-md flex-wrap">
                 <ToolbarButton
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     active={editor.isActive('bold')}

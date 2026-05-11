@@ -3,24 +3,33 @@
 /* =================================================== */
 
 .label-style {
-    @apply text-xs font-medium text-gray-700;
+    @apply text-xs font-medium text-gray-700 dark:text-gray-300;
 }
 
 .span-label-style {
-    @apply text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1;
+    @apply text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1;
 }
 
 .table-header-style {
-    @apply text-xs font-semibold text-gray-600 uppercase tracking-wide;
+    @apply text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide;
 }
 
 .input-border {
     @apply w-full h-10 px-3 text-sm bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-colors;
 }
 
+.dark .input-border {
+    @apply bg-gray-950 border-gray-700 text-gray-50 placeholder-gray-500 focus:ring-indigo-900/50 focus:border-indigo-400;
+}
+
 .input-border:disabled,
 .input-border[readonly] {
     @apply bg-gray-50 text-gray-500 cursor-not-allowed;
+}
+
+.dark .input-border:disabled,
+.dark .input-border[readonly] {
+    @apply bg-gray-900 text-gray-500;
 }
 
 /* =================================================== */
@@ -67,4 +76,10 @@
     color: #4b5563;
     font-style: italic;
     background: #fafafa;
+}
+
+.dark .tiptap blockquote {
+    border-left-color: #374151;
+    color: #9ca3af;
+    background: #111827;
 }

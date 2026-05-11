@@ -11,7 +11,7 @@ const Avatar = ({ firstName = '', lastName = '', size = 'sm', className = '' }) 
     const initials = ((firstName?.[0] || '') + (lastName?.[0] || '')).toUpperCase() || '?';
     return (
         <div
-            className={`flex-shrink-0 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center font-semibold text-gray-700 ${sizes[size] || sizes.sm} ${className}`}
+            className={`flex-shrink-0 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center font-semibold text-gray-700 dark:text-gray-200 ${sizes[size] || sizes.sm} ${className}`}
         >
             {initials}
         </div>

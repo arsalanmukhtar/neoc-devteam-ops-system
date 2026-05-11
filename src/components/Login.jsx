@@ -38,18 +38,18 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="w-full flex-1 flex items-center justify-center bg-gray-50 px-4">
+    <div className="w-full flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-7">
-          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
             Sign in to NEOC TMS
           </h1>
-          <p className="text-sm text-gray-500 mt-1.5">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5">
             Enter your credentials to continue
           </p>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm p-6">
           {error && (
             <div className="mb-4">
               <NotificationAlert
@@ -62,13 +62,13 @@ const Login = ({ onLogin }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Email
               </label>
               <div className="relative">
                 <LuMail
                   size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
                 />
                 <input
                   id="email"
@@ -78,19 +78,19 @@ const Login = ({ onLogin }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@neoc.gov.pk"
-                  className="w-full h-10 pl-9 pr-3 text-sm bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-colors"
+                  className="w-full h-10 pl-9 pr-3 text-sm bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-md text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
                 <LuLock
                   size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
                 />
                 <input
                   id="password"
@@ -100,7 +100,7 @@ const Login = ({ onLogin }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-10 pl-9 pr-3 text-sm bg-white border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-colors"
+                  className="w-full h-10 pl-9 pr-3 text-sm bg-white dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-md text-gray-900 dark:text-gray-50 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/50 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors"
                 />
               </div>
             </div>
@@ -123,7 +123,7 @@ const Login = ({ onLogin }) => {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-6">
           NEOC Task Management System · © 2026
         </p>
       </div>

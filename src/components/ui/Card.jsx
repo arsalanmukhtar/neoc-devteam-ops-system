@@ -1,9 +1,8 @@
 import React from 'react';
 
-// Visual card primitive used in record grids.
-// onClick (when provided) makes the card interactive: cursor + hover lift.
 const Card = ({ onClick, className = '', children, padded = true }) => {
     const interactive = !!onClick;
+    const bg = 'bg-white dark:bg-gray-900';
     return (
         <div
             onClick={onClick}
@@ -15,9 +14,9 @@ const Card = ({ onClick, className = '', children, padded = true }) => {
                     onClick();
                 }
             } : undefined}
-            className={`group relative rounded-lg border border-gray-200 bg-white transition-all ${padded ? 'p-5' : ''} ${
+            className={`group relative rounded-lg border border-gray-200 dark:border-gray-800 ${bg} transition-all ${padded ? 'p-5' : ''} ${
                 interactive
-                    ? 'cursor-pointer hover:border-gray-300 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 focus-visible:border-indigo-400'
+                    ? 'cursor-pointer hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm dark:hover:shadow-black/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-200 dark:focus-visible:ring-indigo-500/30 focus-visible:border-indigo-400 dark:focus-visible:border-indigo-500'
                     : ''
             } ${className}`}
             style={{ animation: 'card-fade-in 0.18s ease-out both' }}

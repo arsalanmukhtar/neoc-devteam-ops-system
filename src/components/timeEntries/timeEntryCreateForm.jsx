@@ -110,22 +110,22 @@ const TimeEntryCreateForm = ({ onCreated }) => {
 
     return (
         <form
-            className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-5"
+            className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 space-y-5"
             onSubmit={handleSubmit}
         >
             <div>
-                <h2 className="text-base font-semibold text-gray-900 tracking-tight">
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
                     {roleId === 3 ? 'Submit time entry' : 'Create time entry'}
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     Log the hours you spent on a task.
                 </p>
             </div>
 
             {roleId === 3 && (
-                <div className="flex items-start gap-2 px-3 py-2.5 rounded-md bg-sky-50 border border-sky-200">
-                    <LuInfo size={15} className="text-sky-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-sky-900">
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-md bg-sky-50 dark:bg-sky-500/10 border border-sky-200 dark:border-sky-500/30">
+                    <LuInfo size={15} className="text-sky-600 dark:text-sky-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-sky-900 dark:text-sky-200">
                         Your entry will be sent to an Admin or Project Manager for approval
                         before counting toward your logged hours.
                     </p>
@@ -198,7 +198,7 @@ const TimeEntryCreateForm = ({ onCreated }) => {
                 />
             </Field>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <Button
                     type="button"
                     variant="secondary"

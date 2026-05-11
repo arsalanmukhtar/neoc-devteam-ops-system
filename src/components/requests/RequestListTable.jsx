@@ -12,6 +12,13 @@ import Toolbar from '../ui/Toolbar';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import RichTextEditor from '../ui/RichTextEditor';
+import FilterPanel, { FilterGroup } from '../ui/FilterPanel';
+
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+];
 
 const titleCase = (s) => {
     if (!s) return '';
@@ -29,9 +36,10 @@ const RequestListTable = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [alert, setAlert] = useState(null); // { type, message }
+    const [priorityFilters, setPriorityFilters] = useState(() => new Set());
+    const [alert, setAlert] = useState(null);
 
-    const [active, setActive] = useState(null); // currently-viewing request
+    const [active, setActive] = useState(null);
     const [feedback, setFeedback] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
 
@@ -58,15 +66,25 @@ const RequestListTable = () => {
         fetchRequests();
     }, []);
 
+    const togglePriority = (v) => {
+        const next = new Set(priorityFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setPriorityFilters(next);
+    };
+
     const filtered = useMemo(() => {
-        if (!search.trim()) return requests;
-        const q = search.toLowerCase();
-        return requests.filter(
-            (r) =>
-                r.task_title?.toLowerCase().includes(q) ||
-                `${r.user_first_name} ${r.user_last_name}`.toLowerCase().includes(q)
-        );
-    }, [requests, search]);
+        return requests.filter((r) => {
+            if (priorityFilters.size > 0 && !priorityFilters.has((r.priority || '').toLowerCase()))
+                return false;
+            if (search.trim()) {
+                const q = search.toLowerCase();
+                const hay = `${r.task_title} ${r.user_first_name} ${r.user_last_name}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+    }, [requests, search, priorityFilters]);
 
     const closeDrawer = () => {
         setActive(null);
@@ -112,31 +130,44 @@ const RequestListTable = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
                 <Spinner size={16} />
                 <span className="text-sm">Loading requests…</span>
             </div>
         );
     }
 
+    const hasActive = priorityFilters.size > 0;
+
     return (
-        <div>
-            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
-                    Pending Requests
-                </h2>
+        <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 px-8 pt-6 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                        Pending Requests
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                        {filtered.length} pending
+                    </span>
+                </div>
                 <Toolbar
                     search={search}
                     onSearchChange={setSearch}
                     searchPlaceholder="Search by task or requester…"
-                    right={
-                        <span className="text-xs text-gray-500 tabular-nums">
-                            {filtered.length} pending
-                        </span>
+                    filters={
+                        <FilterPanel hasActive={hasActive} onClear={() => setPriorityFilters(new Set())}>
+                            <FilterGroup
+                                title="Priority"
+                                options={PRIORITY_OPTIONS}
+                                selected={priorityFilters}
+                                onToggle={togglePriority}
+                            />
+                        </FilterPanel>
                     }
                 />
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll px-8 py-6">
             {filtered.length === 0 ? (
                 <EmptyState
                     icon={LuInbox}
@@ -144,16 +175,17 @@ const RequestListTable = () => {
                     description={
                         requests.length === 0
                             ? "You're all caught up — no pending time-entry requests to review."
-                            : 'Try a different search term.'
+                            : 'Try a different search or filter combination.'
                     }
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filtered.map((req) => {
                         const duration = getDurationHours(req.start_time, req.end_time);
                         return (
                             <Card
                                 key={req.request_id}
+                                tone="amber"
                                 onClick={() => {
                                     setActive(req);
                                     setFeedback('');
@@ -165,27 +197,27 @@ const RequestListTable = () => {
                                     </StatusPill>
                                     <StatusPill tone="amber">Pending</StatusPill>
                                 </div>
-                                <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-1 line-clamp-1">
                                     {req.task_title}
                                 </h3>
                                 <div className="flex items-baseline gap-1.5 mb-3">
-                                    <span className="text-2xl font-semibold text-gray-900 tabular-nums">
+                                    <span className="text-2xl font-semibold text-gray-900 dark:text-gray-50 tabular-nums">
                                         {duration}
                                     </span>
-                                    <span className="text-xs text-gray-500">hours</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">hours</span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-3 tabular-nums">
-                                    <LuClock size={11} className="text-gray-400" />
+                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mb-3 tabular-nums">
+                                    <LuClock size={11} className="text-gray-400 dark:text-gray-500" />
                                     {formatDateTime(req.start_time)}
                                 </div>
-                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 mb-3">
+                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800 mb-3">
                                     <div className="flex items-center gap-2 min-w-0">
                                         <Avatar
                                             firstName={req.user_first_name}
                                             lastName={req.user_last_name}
                                             size="xs"
                                         />
-                                        <span className="text-xs text-gray-600 truncate">
+                                        <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
                                             {req.user_first_name} {req.user_last_name}
                                         </span>
                                     </div>
@@ -219,6 +251,7 @@ const RequestListTable = () => {
                     })}
                 </div>
             )}
+            </div>
 
             <Drawer
                 open={!!active}
@@ -276,20 +309,20 @@ const RequestListTable = () => {
                                         lastName={active.user_last_name}
                                         size="xs"
                                     />
-                                    <span className="text-sm text-gray-900 truncate">
+                                    <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
                                         {active.user_first_name} {active.user_last_name}
                                     </span>
                                 </div>
                             </div>
                             <div>
                                 <span className="span-label-style">Start Time</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {formatDateTime(active.start_time)}
                                 </div>
                             </div>
                             <div>
                                 <span className="span-label-style">End Time</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {formatDateTime(active.end_time)}
                                 </div>
                             </div>
@@ -298,11 +331,11 @@ const RequestListTable = () => {
                         <div>
                             <span className="span-label-style">Notes from requester</span>
                             <div
-                                className="tiptap mt-1.5 text-sm text-gray-700 max-h-48 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                className="tiptap mt-1.5 text-sm text-gray-700 dark:text-gray-200 max-h-48 overflow-y-auto sidebar-scroll border border-gray-200 dark:border-gray-800 rounded-md p-3 bg-gray-50 dark:bg-gray-950"
                                 dangerouslySetInnerHTML={{
                                     __html:
                                         active.notes ||
-                                        '<p class="text-gray-400">No notes provided.</p>',
+                                        '<p class="text-gray-400 dark:text-gray-500">No notes provided.</p>',
                                 }}
                             />
                         </div>
@@ -320,7 +353,7 @@ const RequestListTable = () => {
                                     maxHeight="200px"
                                 />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1.5">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                                 Feedback is shared with the requester on accept or reject.
                             </p>
                         </div>

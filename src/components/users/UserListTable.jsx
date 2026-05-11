@@ -10,6 +10,7 @@ import Toolbar from '../ui/Toolbar';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import Field, { Input, Select } from '../ui/Field';
+import FilterPanel, { FilterGroup } from '../ui/FilterPanel';
 
 const ROLE_OPTIONS = [
     { value: '1', label: 'Administrator' },
@@ -31,6 +32,8 @@ const UserListTable = ({ api = '/api/users/all' }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [roleFilters, setRoleFilters] = useState(() => new Set());
+    const [statusFilters, setStatusFilters] = useState(() => new Set());
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [form, setForm] = useState({
@@ -94,16 +97,34 @@ const UserListTable = ({ api = '/api/users/all' }) => {
         }
     }, [success, error]);
 
+    const toggleRole = (v) => {
+        const next = new Set(roleFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setRoleFilters(next);
+    };
+    const toggleStatus = (v) => {
+        const next = new Set(statusFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setStatusFilters(next);
+    };
+
     const filtered = useMemo(() => {
-        if (!search.trim()) return users;
-        const q = search.toLowerCase();
-        return users.filter(
-            (u) =>
-                `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
-                u.email?.toLowerCase().includes(q) ||
-                roleLabel(u.role_id).toLowerCase().includes(q)
-        );
-    }, [users, search]);
+        return users.filter((u) => {
+            if (roleFilters.size > 0 && !roleFilters.has(String(u.role_id))) return false;
+            if (statusFilters.size > 0) {
+                const v = isActiveValue(u.is_active) ? 'true' : 'false';
+                if (!statusFilters.has(v)) return false;
+            }
+            if (search.trim()) {
+                const q = search.toLowerCase();
+                const hay = `${u.first_name} ${u.last_name} ${u.email} ${roleLabel(u.role_id)}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+    }, [users, search, roleFilters, statusFilters]);
 
     const closeDrawer = () => {
         setSelectedUser(null);
@@ -182,31 +203,56 @@ const UserListTable = ({ api = '/api/users/all' }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
                 <Spinner size={16} />
                 <span className="text-sm">Loading users…</span>
             </div>
         );
     }
 
+    const hasActive = roleFilters.size > 0 || statusFilters.size > 0;
+
     return (
-        <div>
-            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
-                    List all Users
-                </h2>
+        <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 px-8 pt-6 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                        List all Users
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                        {filtered.length} {filtered.length === 1 ? 'user' : 'users'}
+                    </span>
+                </div>
                 <Toolbar
                     search={search}
                     onSearchChange={setSearch}
                     searchPlaceholder="Search by name, email, or role…"
-                    right={
-                        <span className="text-xs text-gray-500 tabular-nums">
-                            {filtered.length} {filtered.length === 1 ? 'user' : 'users'}
-                        </span>
+                    filters={
+                        <FilterPanel
+                            hasActive={hasActive}
+                            onClear={() => {
+                                setRoleFilters(new Set());
+                                setStatusFilters(new Set());
+                            }}
+                        >
+                            <FilterGroup
+                                title="Role"
+                                options={ROLE_OPTIONS}
+                                selected={roleFilters}
+                                onToggle={toggleRole}
+                            />
+                            <FilterGroup
+                                title="Status"
+                                options={STATUS_OPTIONS}
+                                selected={statusFilters}
+                                onToggle={toggleStatus}
+                            />
+                        </FilterPanel>
                     }
                 />
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll px-8 py-6">
             {filtered.length === 0 ? (
                 <EmptyState
                     icon={LuUsers}
@@ -214,15 +260,19 @@ const UserListTable = ({ api = '/api/users/all' }) => {
                     description={
                         users.length === 0
                             ? 'Register the first team member from the Register User tab.'
-                            : 'Try a different search term.'
+                            : 'Try a different search or filter combination.'
                     }
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filtered.map((u) => {
                         const active = isActiveValue(u.is_active);
                         return (
-                            <Card key={u.user_id} onClick={() => setSelectedUser(u)}>
+                            <Card
+                                key={u.user_id}
+                                tone={active ? 'emerald' : 'rose'}
+                                onClick={() => setSelectedUser(u)}
+                            >
                                 <div className="flex items-start gap-3">
                                     <Avatar
                                         firstName={u.first_name}
@@ -231,22 +281,22 @@ const UserListTable = ({ api = '/api/users/all' }) => {
                                     />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
-                                            <h3 className="text-sm font-semibold text-gray-900 truncate">
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 truncate">
                                                 {u.first_name} {u.last_name}
                                             </h3>
                                             <StatusPill tone={active ? 'emerald' : 'rose'}>
                                                 {active ? 'Active' : 'Inactive'}
                                             </StatusPill>
                                         </div>
-                                        <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 min-w-0">
+                                        <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 min-w-0">
                                             <LuMail
                                                 size={12}
-                                                className="text-gray-400 flex-shrink-0"
+                                                className="text-gray-400 dark:text-gray-500 flex-shrink-0"
                                             />
                                             <span className="truncate">{u.email}</span>
                                         </div>
-                                        <div className="mt-3 pt-3 border-t border-gray-100">
-                                            <span className="text-[11px] font-medium text-gray-600">
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300">
                                                 {roleLabel(u.role_id)}
                                             </span>
                                         </div>
@@ -257,6 +307,7 @@ const UserListTable = ({ api = '/api/users/all' }) => {
                     })}
                 </div>
             )}
+            </div>
 
             <Drawer
                 open={!!selectedUser}
@@ -307,11 +358,7 @@ const UserListTable = ({ api = '/api/users/all' }) => {
                                     required
                                 />
                             </Field>
-                            <Field
-                                label="Email"
-                                id="dr_email"
-                                hint="Email cannot be changed."
-                            >
+                            <Field label="Email" id="dr_email" hint="Email cannot be changed.">
                                 <Input id="dr_email" value={form.email} readOnly tabIndex={-1} />
                             </Field>
                             <Field

@@ -46,24 +46,76 @@ body {
   --space-lg: 24px;
 }
 
-/* Remove Chrome autofill background */
+/* =================================================== */
+/* Theme-aware browser autofill                          */
+/* =================================================== */
+/* Chrome paints autofilled fields with its own bg/text colors. We override:
+   - background via a 1000px inset box-shadow (the bg paint cannot escape it)
+   - text via -webkit-text-fill-color (overrides Chrome's autofill text color)
+   - bg transition stretched to 600000s so any color animation never visibly
+     completes during a session.
+   :-webkit-autofill and :autofill are in separate blocks so older parsers
+   that don't recognise one don't drop both. */
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px white inset !important;
-  box-shadow: 0 0 0 1000px white inset !important;
-  background-color: white !important;
-  color: inherit !important;
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+  transition: background-color 600000s ease-in-out 0s;
 }
 
-/* --- 4. GLOBAL STYLES (Consistency) --- */
+input:autofill,
+textarea:autofill {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  caret-color: #111827 !important;
+  transition: background-color 600000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #030712 inset !important;
+  -webkit-text-fill-color: #f9fafb !important;
+  caret-color: #f9fafb !important;
+}
+
+.dark input:autofill,
+.dark textarea:autofill {
+  -webkit-box-shadow: 0 0 0 1000px #030712 inset !important;
+  -webkit-text-fill-color: #f9fafb !important;
+  caret-color: #f9fafb !important;
+}
+
+/* Native <option> fallback for any select rendered outside the custom dropdown */
+option {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.dark option {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+/* --- 4. GLOBAL STYLES (Consistency) ---
+   Body background and text colors are owned by Tailwind classes on the body
+   element (see index.html: `bg-white dark:bg-gray-950`) so the theme toggle
+   can switch them. Do not re-introduce hardcoded color/background-color here. */
 body {
   margin: 0;
   padding: 0;
   font-family: var(--font-family-base);
-  color: var(--color-black);
-  background-color: var(--color-white);
 }
 
 /* --- 5. Animation styles --- */
@@ -223,21 +275,29 @@ body {
 /* =================================================== */
 .sidebar-scroll::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
   background: #e5e7eb;
-  /* Tailwind stone-300 */
   border-radius: 6px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-track {
-  background: #fff;
+  background: transparent;
 }
 
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #e5e7eb #fff;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #374151;
+}
+
+.dark .sidebar-scroll {
+  scrollbar-color: #374151 transparent;
 }
 
 /* =================================================== */

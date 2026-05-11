@@ -43,12 +43,19 @@ const Workspace = ({ activeTab, roleId }) => {
                             ? analyticsTabs
                             : [];
 
+    // List-style views own their full height and manage their own scroll so
+    // the scrollbar covers only the card grid, not the title/search/filter row.
+    // Form-style views (create/register) keep the workspace's padded scroll wrapper.
+    const isFullHeightView =
+        ['list', 'update', 'delete'].includes(activeTopTab) ||
+        activeTab === 'requests';
+
     const allowedTabs = getAllowedTabs(roleId);
 
     if (!allowedTabs.includes(activeTab)) {
         return (
-            <div className="flex-1 bg-white min-h-0 h-full flex items-center justify-center">
-                <div className="text-sm text-gray-500">You do not have access to this section.</div>
+            <div className="flex-1 bg-white dark:bg-gray-950 min-h-0 h-full flex items-center justify-center">
+                <div className="text-sm text-gray-500 dark:text-gray-400">You do not have access to this section.</div>
             </div>
         );
     }
@@ -68,7 +75,7 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'delete':
                 return <UserDelete api={apiEndpoint} />;
             default:
-                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500 dark:text-gray-400">Tab content will go here.</div>;
         }
     };
 
@@ -83,7 +90,7 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'delete':
                 return <ProjectDelete api={apiEndpoint} />;
             default:
-                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500 dark:text-gray-400">Tab content will go here.</div>;
         }
     };
 
@@ -94,7 +101,7 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'list':
                 return <TaskListTable api={apiEndpoint} />;
             default:
-                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500 dark:text-gray-400">Tab content will go here.</div>;
         }
     };
 
@@ -105,7 +112,7 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'list':
                 return <TimeEntryListTable api={apiEndpoint} />;
             default:
-                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500 dark:text-gray-400">Tab content will go here.</div>;
         }
     };
 
@@ -113,20 +120,20 @@ const Workspace = ({ activeTab, roleId }) => {
         if (roleId === 1 || roleId === 2) {
             return <RequestListTable />;
         }
-        return <div className="text-sm text-gray-500">You do not have access to this section.</div>;
+        return <div className="text-sm text-gray-500 dark:text-gray-400">You do not have access to this section.</div>;
     };
 
     const renderAnalyticsTabContent = () => {
         if (roleId === 1 || roleId === 2) {
             return <Analytics activeTab={activeTopTab} />;
         }
-        return <div className="text-sm text-gray-500">You do not have access to this section.</div>;
+        return <div className="text-sm text-gray-500 dark:text-gray-400">You do not have access to this section.</div>;
     };
 
     return (
-        <div className="relative h-full flex flex-col w-full bg-white min-h-0 z-0">
+        <div className="relative h-full flex flex-col w-full bg-white dark:bg-gray-950 min-h-0 z-0">
             {topTabs.length > 0 && (
-                <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8">
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 px-8">
                     <div className="flex gap-6">
                         {topTabs.map((tab) => {
                             const active = activeTopTab === tab.value;
@@ -134,10 +141,10 @@ const Workspace = ({ activeTab, roleId }) => {
                                 <button
                                     key={tab.value}
                                     onClick={() => setActiveTopTab(tab.value)}
-                                    className={`relative whitespace-nowrap py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px
+                                    className={`relative whitespace-nowrap py-3.5 text-sm font-semibold transition-colors border-b-2 -mb-px
                                         ${active
-                                            ? 'text-gray-900 border-indigo-600'
-                                            : 'text-gray-500 border-transparent hover:text-gray-900'
+                                            ? 'text-indigo-700 border-indigo-600 dark:text-indigo-300 dark:border-indigo-400'
+                                            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-900 dark:hover:text-gray-100'
                                         }`}
                                 >
                                     {tab.label}
@@ -148,15 +155,30 @@ const Workspace = ({ activeTab, roleId }) => {
                 </div>
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
-                <div className="px-8 py-6">
-                    {activeTab === "users" && renderUserTabContent()}
-                    {activeTab === "projects" && renderProjectTabContent()}
-                    {activeTab === "tasks" && renderTaskTabContent()}
-                    {activeTab === "time" && renderTimeTabContent()}
-                    {activeTab === "requests" && renderRequestsTabContent()}
-                    {activeTab === "analytics" && renderAnalyticsTabContent()}
-                </div>
+            {/* List/grid views manage their own scroll (header pinned above body).
+                Form views (create/register) sit inside a padded scroll wrapper. */}
+            <div className="flex-1 min-h-0 relative">
+                {isFullHeightView ? (
+                    <>
+                        {activeTab === "users" && renderUserTabContent()}
+                        {activeTab === "projects" && renderProjectTabContent()}
+                        {activeTab === "tasks" && renderTaskTabContent()}
+                        {activeTab === "time" && renderTimeTabContent()}
+                        {activeTab === "requests" && renderRequestsTabContent()}
+                        {activeTab === "analytics" && renderAnalyticsTabContent()}
+                    </>
+                ) : (
+                    <div className="h-full overflow-y-auto sidebar-scroll">
+                        <div className="px-8 py-6">
+                            {activeTab === "users" && renderUserTabContent()}
+                            {activeTab === "projects" && renderProjectTabContent()}
+                            {activeTab === "tasks" && renderTaskTabContent()}
+                            {activeTab === "time" && renderTimeTabContent()}
+                            {activeTab === "requests" && renderRequestsTabContent()}
+                            {activeTab === "analytics" && renderAnalyticsTabContent()}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

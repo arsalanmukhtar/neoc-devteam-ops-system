@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { LuFolderKanban } from 'react-icons/lu';
+import { formatDate } from '@src/utils/dateFormatter';
 import NotificationAlert from '../NotificationAlert';
+import StatusPill from '../ui/StatusPill';
+import { toneFor } from '../ui/statusTone';
+import Card from '../ui/Card';
+import Avatar from '../ui/Avatar';
+import Drawer from '../ui/Drawer';
+import EmptyState from '../ui/EmptyState';
+import Toolbar from '../ui/Toolbar';
+import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import Field, { Input, Select } from '../ui/Field';
 import RichTextEditor from '../ui/RichTextEditor';
+import FilterPanel, { FilterGroup } from '../ui/FilterPanel';
 
 const STATUS_OPTIONS = [
     { value: 'active', label: 'Active' },
@@ -11,6 +22,19 @@ const STATUS_OPTIONS = [
     { value: 'completed', label: 'Completed' },
     { value: 'inactive', label: 'Inactive' },
 ];
+
+const statusLabel = (status) => {
+    if (!status) return '—';
+    const s = String(status).toLowerCase().replace('_', ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '').trim();
+};
 
 const toDateInput = (value) => {
     if (!value) return '';
@@ -30,10 +54,14 @@ const emptyForm = {
 
 const ProjectDetailsUpdate = ({ api }) => {
     const [projects, setProjects] = useState([]);
+    const [managers, setManagers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [statusFilters, setStatusFilters] = useState(() => new Set());
+
     const [selectedId, setSelectedId] = useState('');
     const [form, setForm] = useState(emptyForm);
-    const [managers, setManagers] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -46,8 +74,11 @@ const ProjectDetailsUpdate = ({ api }) => {
             },
         })
             .then((r) => r.json())
-            .then((d) => setProjects(Array.isArray(d) ? d : []))
-            .catch(() => {});
+            .then((d) => {
+                setProjects(Array.isArray(d) ? d : []);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
     }, []);
 
     useEffect(() => {
@@ -88,17 +119,47 @@ const ProjectDetailsUpdate = ({ api }) => {
             });
     }, [selectedId]);
 
+    useEffect(() => {
+        if (success || error) {
+            const t = setTimeout(() => {
+                setSuccess('');
+                setError('');
+            }, 3000);
+            return () => clearTimeout(t);
+        }
+    }, [success, error]);
+
+    const toggleStatus = (v) => {
+        const next = new Set(statusFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setStatusFilters(next);
+    };
+
+    const filtered = useMemo(() => {
+        return projects.filter((p) => {
+            if (statusFilters.size > 0 && !statusFilters.has((p.status || '').toLowerCase()))
+                return false;
+            if (search.trim()) {
+                const q = search.toLowerCase();
+                const hay = `${p.name} ${stripHtml(p.description)} ${p.manager_first_name} ${p.manager_last_name}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+    }, [projects, search, statusFilters]);
+
     const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setSaving(true);
         setError('');
         setSuccess('');
 
         if (form.start_date && form.due_date && form.start_date >= form.due_date) {
             setError('Due date must be after start date.');
-            setLoading(false);
+            setSaving(false);
             return;
         }
 
@@ -115,52 +176,136 @@ const ProjectDetailsUpdate = ({ api }) => {
             const data = await res.json();
             if (res.ok) {
                 setSuccess('Project updated successfully.');
+                setProjects((prev) =>
+                    prev.map((p) =>
+                        p.project_id === selectedId ? { ...p, ...form } : p
+                    )
+                );
             } else {
                 setError(data.error || 'Update failed.');
             }
         } catch {
             setError('Network error.');
         }
-        setLoading(false);
+        setSaving(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
+                <Spinner size={16} />
+                <span className="text-sm">Loading projects…</span>
+            </div>
+        );
+    }
+
+    const hasActive = statusFilters.size > 0;
+    const closeDrawer = () => {
+        setSelectedId('');
+        setForm(emptyForm);
     };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-5">
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <Field label="Select project" id="projectSelect" required>
-                    <Select
-                        id="projectSelect"
-                        value={selectedId}
-                        onChange={(e) => setSelectedId(e.target.value)}
-                    >
-                        <option value="">Choose a project…</option>
-                        {projects.map((p) => (
-                            <option key={p.project_id} value={p.project_id}>
-                                {p.name}
-                            </option>
-                        ))}
-                    </Select>
-                </Field>
+        <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 px-8 pt-6 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                        Update Project Details
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                        {filtered.length} {filtered.length === 1 ? 'project' : 'projects'}
+                    </span>
+                </div>
+                <Toolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    searchPlaceholder="Search projects to update…"
+                    filters={
+                        <FilterPanel hasActive={hasActive} onClear={() => setStatusFilters(new Set())}>
+                            <FilterGroup
+                                title="Status"
+                                options={STATUS_OPTIONS}
+                                selected={statusFilters}
+                                onToggle={toggleStatus}
+                            />
+                        </FilterPanel>
+                    }
+                />
             </div>
 
-            {selectedId && (
-                <form
-                    className="bg-white rounded-lg border border-gray-200 p-6 space-y-5"
-                    onSubmit={handleSubmit}
-                >
-                    <div>
-                        <h2 className="text-base font-semibold text-gray-900 tracking-tight">
-                            Update project
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                            Edit details and save changes.
-                        </p>
-                    </div>
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll px-8 py-6">
+            {filtered.length === 0 ? (
+                <EmptyState
+                    icon={LuFolderKanban}
+                    title={projects.length === 0 ? 'No projects yet' : 'No matches'}
+                    description={
+                        projects.length === 0
+                            ? 'Create a project first, then come back here to edit it.'
+                            : 'Try a different search or filter combination.'
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
+                    {filtered.map((p) => (
+                        <Card
+                            key={p.project_id}
+                            tone={toneFor(p.status)}
+                            onClick={() => setSelectedId(p.project_id)}
+                        >
+                            <div className="mb-3">
+                                <StatusPill tone={toneFor(p.status)}>
+                                    {statusLabel(p.status)}
+                                </StatusPill>
+                            </div>
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-1 line-clamp-1">
+                                {p.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 min-h-[2rem] line-clamp-2">
+                                {stripHtml(p.description) || 'No description.'}
+                            </p>
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Avatar
+                                        firstName={p.manager_first_name}
+                                        lastName={p.manager_last_name}
+                                        size="xs"
+                                    />
+                                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                                        {p.manager_first_name} {p.manager_last_name}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 tabular-nums">
+                                    Due {formatDate(p.due_date)}
+                                </span>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+            </div>
 
-                    <Field label="Project name" id="name" required>
+            <Drawer
+                open={!!selectedId}
+                onClose={closeDrawer}
+                title={form.name || 'Edit project'}
+                subtitle="Edit details and save changes"
+                width="xl"
+                footer={
+                    <>
+                        <div className="flex-1" />
+                        <Button variant="secondary" onClick={closeDrawer} disabled={saving}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSubmit} loading={saving}>
+                            Save changes
+                        </Button>
+                    </>
+                }
+            >
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                    <Field label="Project name" id="dr_name" required>
                         <Input
-                            id="name"
-                            name="name"
+                            id="dr_name"
                             value={form.name}
                             onChange={(e) => setField('name', e.target.value)}
                             required
@@ -175,9 +320,9 @@ const ProjectDetailsUpdate = ({ api }) => {
                     </Field>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Field label="Manager" id="manager_id" required>
+                        <Field label="Manager" id="dr_manager_id" required>
                             <Select
-                                id="manager_id"
+                                id="dr_manager_id"
                                 value={form.manager_id}
                                 onChange={(e) => setField('manager_id', e.target.value)}
                                 required
@@ -193,9 +338,9 @@ const ProjectDetailsUpdate = ({ api }) => {
                             </Select>
                         </Field>
 
-                        <Field label="Status" id="status" required>
+                        <Field label="Status" id="dr_status" required>
                             <Select
-                                id="status"
+                                id="dr_status"
                                 value={form.status}
                                 onChange={(e) => setField('status', e.target.value)}
                                 required
@@ -211,44 +356,34 @@ const ProjectDetailsUpdate = ({ api }) => {
                             </Select>
                         </Field>
 
-                        <Field label="Start date" id="start_date" required>
+                        <Field label="Start date" id="dr_start_date" required>
                             <Input
                                 type="date"
-                                id="start_date"
+                                id="dr_start_date"
                                 value={form.start_date}
                                 onChange={(e) => setField('start_date', e.target.value)}
                                 required
                             />
                         </Field>
 
-                        <Field label="Due date" id="due_date" required>
+                        <Field label="Due date" id="dr_due_date" required>
                             <Input
                                 type="date"
-                                id="due_date"
+                                id="dr_due_date"
                                 value={form.due_date}
                                 onChange={(e) => setField('due_date', e.target.value)}
                                 required
                             />
                         </Field>
                     </div>
-
-                    <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-                        <Button type="submit" loading={loading}>
-                            Save changes
-                        </Button>
-                    </div>
-
-                    {error && (
-                        <NotificationAlert type="error" message={error} onClose={() => setError('')} />
-                    )}
-                    {success && (
-                        <NotificationAlert
-                            type="success"
-                            message={success}
-                            onClose={() => setSuccess('')}
-                        />
-                    )}
                 </form>
+            </Drawer>
+
+            {error && (
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
+            )}
+            {success && (
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
             )}
         </div>
     );

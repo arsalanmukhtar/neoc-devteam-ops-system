@@ -67,14 +67,14 @@ const UserRegisterForm = ({ api, onRegistered }) => {
 
     return (
         <form
-            className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-5"
+            className="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 space-y-5"
             onSubmit={handleSubmit}
         >
             <div>
-                <h2 className="text-base font-semibold text-gray-900 tracking-tight">
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
                     Register user
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                     Create a new account with a role and activation status.
                 </p>
             </div>
@@ -156,7 +156,7 @@ const UserRegisterForm = ({ api, onRegistered }) => {
                 </Field>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <Button
                     type="button"
                     variant="secondary"

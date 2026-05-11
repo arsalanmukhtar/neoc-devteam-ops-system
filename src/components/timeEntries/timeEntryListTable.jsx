@@ -13,6 +13,19 @@ import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import Field, { Input } from '../ui/Field';
 import RichTextEditor from '../ui/RichTextEditor';
+import FilterPanel, { FilterGroup } from '../ui/FilterPanel';
+
+const STATUS_OPTIONS = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'accepted', label: 'Accepted' },
+    { value: 'rejected', label: 'Rejected' },
+];
+
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+];
 
 const titleCase = (s) => {
     if (!s) return '';
@@ -33,6 +46,8 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [statusFilters, setStatusFilters] = useState(() => new Set());
+    const [priorityFilters, setPriorityFilters] = useState(() => new Set());
     const [roleId, setRoleId] = useState(null);
     const [userId, setUserId] = useState(null);
 
@@ -88,15 +103,33 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
         }
     }, [success, error]);
 
+    const toggleStatus = (v) => {
+        const next = new Set(statusFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setStatusFilters(next);
+    };
+    const togglePriority = (v) => {
+        const next = new Set(priorityFilters);
+        if (next.has(v)) next.delete(v);
+        else next.add(v);
+        setPriorityFilters(next);
+    };
+
     const filtered = useMemo(() => {
-        if (!search.trim()) return entries;
-        const q = search.toLowerCase();
-        return entries.filter(
-            (e) =>
-                e.task_title?.toLowerCase().includes(q) ||
-                `${e.user_first_name} ${e.user_last_name}`.toLowerCase().includes(q)
-        );
-    }, [entries, search]);
+        return entries.filter((e) => {
+            const s = (e.status || 'pending').toLowerCase();
+            if (statusFilters.size > 0 && !statusFilters.has(s)) return false;
+            if (priorityFilters.size > 0 && !priorityFilters.has((e.priority || '').toLowerCase()))
+                return false;
+            if (search.trim()) {
+                const q = search.toLowerCase();
+                const hay = `${e.task_title} ${e.user_first_name} ${e.user_last_name}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+    }, [entries, search, statusFilters, priorityFilters]);
 
     const canEditEntry = (entry) => {
         if (!entry) return false;
@@ -160,31 +193,56 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
                 <Spinner size={16} />
                 <span className="text-sm">Loading time entries…</span>
             </div>
         );
     }
 
+    const hasActive = statusFilters.size > 0 || priorityFilters.size > 0;
+
     return (
-        <div>
-            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
-                    List Time Entries
-                </h2>
+        <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 px-8 pt-6 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                        List Time Entries
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                        {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+                    </span>
+                </div>
                 <Toolbar
                     search={search}
                     onSearchChange={setSearch}
                     searchPlaceholder="Search by task or user…"
-                    right={
-                        <span className="text-xs text-gray-500 tabular-nums">
-                            {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
-                        </span>
+                    filters={
+                        <FilterPanel
+                            hasActive={hasActive}
+                            onClear={() => {
+                                setStatusFilters(new Set());
+                                setPriorityFilters(new Set());
+                            }}
+                        >
+                            <FilterGroup
+                                title="Status"
+                                options={STATUS_OPTIONS}
+                                selected={statusFilters}
+                                onToggle={toggleStatus}
+                            />
+                            <FilterGroup
+                                title="Priority"
+                                options={PRIORITY_OPTIONS}
+                                selected={priorityFilters}
+                                onToggle={togglePriority}
+                            />
+                        </FilterPanel>
                     }
                 />
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll px-8 py-6">
             {filtered.length === 0 ? (
                 <EmptyState
                     icon={LuClock}
@@ -192,16 +250,20 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                     description={
                         entries.length === 0
                             ? 'Log your hours from the Create Time Entry tab.'
-                            : 'Try a different search term.'
+                            : 'Try a different search or filter combination.'
                     }
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filtered.map((e) => {
                         const status = (e.status || 'pending').toLowerCase();
                         const duration = e.duration ? Number(e.duration).toFixed(2) : '0';
                         return (
-                            <Card key={e.entry_id} onClick={() => openEntry(e)}>
+                            <Card
+                                key={e.entry_id}
+                                tone={toneFor(status)}
+                                onClick={() => openEntry(e)}
+                            >
                                 <div className="flex items-center justify-between mb-3 gap-2">
                                     <StatusPill tone={toneFor(e.priority)}>
                                         {titleCase(e.priority)}
@@ -210,27 +272,27 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                                         {titleCase(status)}
                                     </StatusPill>
                                 </div>
-                                <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-1 line-clamp-1">
                                     {e.task_title || 'Untitled task'}
                                 </h3>
                                 <div className="flex items-baseline gap-1.5 mb-4">
-                                    <span className="text-2xl font-semibold text-gray-900 tabular-nums">
+                                    <span className="text-2xl font-semibold text-gray-900 dark:text-gray-50 tabular-nums">
                                         {duration}
                                     </span>
-                                    <span className="text-xs text-gray-500">hours</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">hours</span>
                                 </div>
-                                <div className="text-[11px] text-gray-500 space-y-0.5 mb-3 tabular-nums">
+                                <div className="text-[11px] text-gray-500 dark:text-gray-400 space-y-0.5 mb-3 tabular-nums">
                                     <div>Start: {formatDateTime(e.start_time)}</div>
                                     <div>End: {formatDateTime(e.end_time)}</div>
                                 </div>
-                                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
                                     <div className="flex items-center gap-2 min-w-0">
                                         <Avatar
                                             firstName={e.user_first_name}
                                             lastName={e.user_last_name}
                                             size="xs"
                                         />
-                                        <span className="text-xs text-gray-600 truncate">
+                                        <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
                                             {e.user_first_name} {e.user_last_name}
                                         </span>
                                     </div>
@@ -242,7 +304,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                                                 setFeedbackContent(e.feedback);
                                                 setFeedbackOpen(true);
                                             }}
-                                            className="flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700"
+                                            className="flex items-center gap-1 text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
                                         >
                                             <LuMessageSquare size={11} />
                                             Feedback
@@ -254,6 +316,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                     })}
                 </div>
             )}
+            </div>
 
             <Drawer
                 open={!!selected}
@@ -326,14 +389,14 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                                         lastName={selected.user_last_name}
                                         size="xs"
                                     />
-                                    <span className="text-sm text-gray-900 truncate">
+                                    <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
                                         {selected.user_first_name} {selected.user_last_name}
                                     </span>
                                 </div>
                             </div>
                             <div>
                                 <span className="span-label-style">Duration</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {selected.duration
                                         ? `${Number(selected.duration).toFixed(2)} hours`
                                         : '—'}
@@ -344,7 +407,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <span className="span-label-style">Start Time</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {formatDateTime(selected.start_time)}
                                 </div>
                             </div>
@@ -361,7 +424,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                                         onChange={(e) => setDrEndTime(e.target.value)}
                                     />
                                 ) : (
-                                    <div className="h-10 flex items-center text-sm text-gray-900 tabular-nums">
+                                    <div className="h-10 flex items-center text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                         {formatDateTime(selected.end_time)}
                                     </div>
                                 )}
@@ -380,11 +443,11 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                                     />
                                 ) : (
                                     <div
-                                        className="tiptap text-sm text-gray-700 max-h-48 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                        className="tiptap text-sm text-gray-700 dark:text-gray-200 max-h-48 overflow-y-auto sidebar-scroll border border-gray-200 dark:border-gray-800 rounded-md p-3 bg-gray-50 dark:bg-gray-950"
                                         dangerouslySetInnerHTML={{
                                             __html:
                                                 selected.notes ||
-                                                '<p class="text-gray-400">No notes.</p>',
+                                                '<p class="text-gray-400 dark:text-gray-500">No notes.</p>',
                                         }}
                                     />
                                 )}
@@ -395,7 +458,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                             <div>
                                 <span className="span-label-style">Reviewer feedback</span>
                                 <div
-                                    className="tiptap mt-1.5 text-sm text-gray-700 border border-amber-200 rounded-md p-3 bg-amber-50"
+                                    className="tiptap mt-1.5 text-sm text-gray-700 dark:text-gray-200 border border-amber-200 dark:border-amber-500/30 rounded-md p-3 bg-amber-50 dark:bg-amber-500/10"
                                     dangerouslySetInnerHTML={{ __html: selected.feedback }}
                                 />
                             </div>
@@ -403,7 +466,7 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
 
                         <div>
                             <span className="span-label-style">Created</span>
-                            <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                            <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                 {formatDateTime(selected.created_at)}
                             </div>
                         </div>
@@ -418,9 +481,11 @@ const TimeEntryListTable = ({ api = '/api/time/list' }) => {
                 width="md"
             >
                 <div
-                    className="tiptap text-sm text-gray-700 border border-gray-200 rounded-md p-4 bg-gray-50 min-h-[100px]"
+                    className="tiptap text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-800 rounded-md p-4 bg-gray-50 dark:bg-gray-950 min-h-[100px]"
                     dangerouslySetInnerHTML={{
-                        __html: feedbackContent || '<p class="text-gray-400">No feedback.</p>',
+                        __html:
+                            feedbackContent ||
+                            '<p class="text-gray-400 dark:text-gray-500">No feedback.</p>',
                     }}
                 />
             </Drawer>

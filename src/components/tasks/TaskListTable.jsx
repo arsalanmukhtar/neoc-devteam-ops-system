@@ -12,6 +12,7 @@ import Toolbar from '../ui/Toolbar';
 import Spinner from '../ui/Spinner';
 import Button from '../ui/Button';
 import Field, { Select } from '../ui/Field';
+import FilterPanel, { FilterGroup } from '../ui/FilterPanel';
 
 const STATUS_OPTIONS = [
     { value: 'pending', label: 'Pending' },
@@ -41,6 +42,8 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [statusFilters, setStatusFilters] = useState(() => new Set());
+    const [priorityFilters, setPriorityFilters] = useState(() => new Set());
     const [roleId, setRoleId] = useState(null);
     const [userId, setUserId] = useState(null);
 
@@ -83,16 +86,30 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
         }
     }, [success, error]);
 
+    const toggleFilter = (set, setSet) => (value) => {
+        const next = new Set(set);
+        if (next.has(value)) next.delete(value);
+        else next.add(value);
+        setSet(next);
+    };
+
+    const clearFilters = () => {
+        setStatusFilters(new Set());
+        setPriorityFilters(new Set());
+    };
+
     const filtered = useMemo(() => {
-        if (!search.trim()) return tasks;
-        const q = search.toLowerCase();
-        return tasks.filter(
-            (t) =>
-                t.title?.toLowerCase().includes(q) ||
-                t.project_name?.toLowerCase().includes(q) ||
-                `${t.assigned_first_name} ${t.assigned_last_name}`.toLowerCase().includes(q)
-        );
-    }, [tasks, search]);
+        return tasks.filter((t) => {
+            if (statusFilters.size > 0 && !statusFilters.has((t.status || '').toLowerCase())) return false;
+            if (priorityFilters.size > 0 && !priorityFilters.has((t.priority || '').toLowerCase())) return false;
+            if (search.trim()) {
+                const q = search.toLowerCase();
+                const hay = `${t.title} ${t.project_name} ${t.assigned_first_name} ${t.assigned_last_name}`.toLowerCase();
+                if (!hay.includes(q)) return false;
+            }
+            return true;
+        });
+    }, [tasks, search, statusFilters, priorityFilters]);
 
     const openTask = (task) => {
         setSelectedTask(task);
@@ -133,9 +150,7 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
             if (res.ok) {
                 setSuccess('Task updated.');
                 setTasks((prev) =>
-                    prev.map((t) =>
-                        t.task_id === selectedTask.task_id ? { ...t, ...body } : t
-                    )
+                    prev.map((t) => (t.task_id === selectedTask.task_id ? { ...t, ...body } : t))
                 );
             } else {
                 const data = await res.json().catch(() => ({}));
@@ -175,31 +190,50 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+            <div className="flex items-center justify-center py-20 text-gray-500 dark:text-gray-400 gap-2">
                 <Spinner size={16} />
                 <span className="text-sm">Loading tasks…</span>
             </div>
         );
     }
 
+    const hasActive = statusFilters.size > 0 || priorityFilters.size > 0;
+
     return (
-        <div>
-            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
-                    List all Tasks
-                </h2>
+        <div className="h-full flex flex-col">
+            <div className="flex-shrink-0 px-8 pt-6 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950">
+                <div className="flex items-baseline justify-between mb-3 gap-3">
+                    <h2 className="text-base font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                        List all Tasks
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                        {filtered.length} {filtered.length === 1 ? 'task' : 'tasks'}
+                    </span>
+                </div>
                 <Toolbar
                     search={search}
                     onSearchChange={setSearch}
                     searchPlaceholder="Search by title, project, or assignee…"
-                    right={
-                        <span className="text-xs text-gray-500 tabular-nums">
-                            {filtered.length} {filtered.length === 1 ? 'task' : 'tasks'}
-                        </span>
+                    filters={
+                        <FilterPanel hasActive={hasActive} onClear={clearFilters}>
+                            <FilterGroup
+                                title="Status"
+                                options={STATUS_OPTIONS}
+                                selected={statusFilters}
+                                onToggle={toggleFilter(statusFilters, setStatusFilters)}
+                            />
+                            <FilterGroup
+                                title="Priority"
+                                options={PRIORITY_OPTIONS}
+                                selected={priorityFilters}
+                                onToggle={toggleFilter(priorityFilters, setPriorityFilters)}
+                            />
+                        </FilterPanel>
                     }
                 />
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll px-8 py-6">
             {filtered.length === 0 ? (
                 <EmptyState
                     icon={LuListChecks}
@@ -207,13 +241,17 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                     description={
                         tasks.length === 0
                             ? 'Tasks created under a project will appear here.'
-                            : 'Try a different search term.'
+                            : 'Try a different search or filter combination.'
                     }
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {filtered.map((t) => (
-                        <Card key={t.task_id} onClick={() => openTask(t)}>
+                        <Card
+                            key={t.task_id}
+                            tone={toneFor(t.status)}
+                            onClick={() => openTask(t)}
+                        >
                             <div className="flex items-center justify-between mb-3 gap-2">
                                 <StatusPill tone={toneFor(t.priority)}>
                                     {titleCase(t.priority)}
@@ -222,28 +260,28 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                                     {titleCase(t.status)}
                                 </StatusPill>
                             </div>
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-50 mb-1 line-clamp-1">
                                 {t.title}
                             </h3>
-                            <p className="text-xs text-gray-500 mb-4 min-h-[2rem] line-clamp-2">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 min-h-[2rem] line-clamp-2">
                                 {stripHtml(t.description) || 'No description.'}
                             </p>
-                            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-3">
-                                <LuFolderKanban size={12} className="text-gray-400 flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                                <LuFolderKanban size={12} className="text-gray-400 dark:text-gray-500 flex-shrink-0" />
                                 <span className="truncate">{t.project_name}</span>
                             </div>
-                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <Avatar
                                         firstName={t.assigned_first_name}
                                         lastName={t.assigned_last_name}
                                         size="xs"
                                     />
-                                    <span className="text-xs text-gray-600 truncate">
+                                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate">
                                         {t.assigned_first_name} {t.assigned_last_name}
                                     </span>
                                 </div>
-                                <span className="text-[11px] text-gray-500 flex-shrink-0 tabular-nums flex items-center gap-1">
+                                <span className="text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 tabular-nums flex items-center gap-1">
                                     <LuCalendar size={11} />
                                     {formatDate(t.due_date)}
                                 </span>
@@ -252,6 +290,7 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                     ))}
                 </div>
             )}
+            </div>
 
             <Drawer
                 open={!!selectedTask}
@@ -290,11 +329,11 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                         <div>
                             <span className="span-label-style">Description</span>
                             <div
-                                className="tiptap mt-1.5 text-sm text-gray-700 max-h-64 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                className="tiptap mt-1.5 text-sm text-gray-700 dark:text-gray-200 max-h-64 overflow-y-auto sidebar-scroll border border-gray-200 dark:border-gray-800 rounded-md p-3 bg-gray-50 dark:bg-gray-950"
                                 dangerouslySetInnerHTML={{
                                     __html:
                                         selectedTask.description ||
-                                        '<p class="text-gray-400">No description.</p>',
+                                        '<p class="text-gray-400 dark:text-gray-500">No description.</p>',
                                 }}
                             />
                         </div>
@@ -314,7 +353,7 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                                     ))}
                                 </Select>
                                 {!canEditStatus && (
-                                    <p className="text-xs text-gray-500 mt-1.5">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                                         Only the assigned team member can update status.
                                     </p>
                                 )}
@@ -348,7 +387,7 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                                         lastName={selectedTask.assigned_last_name}
                                         size="xs"
                                     />
-                                    <span className="text-sm text-gray-900 truncate">
+                                    <span className="text-sm text-gray-900 dark:text-gray-100 truncate">
                                         {selectedTask.assigned_first_name}{' '}
                                         {selectedTask.assigned_last_name}
                                     </span>
@@ -356,13 +395,13 @@ const TaskListTable = ({ api = '/api/tasks/list' }) => {
                             </div>
                             <div>
                                 <span className="span-label-style">Due Date</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {formatDate(selectedTask.due_date)}
                                 </div>
                             </div>
                             <div>
                                 <span className="span-label-style">Created</span>
-                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                <div className="mt-1.5 text-sm text-gray-900 dark:text-gray-100 tabular-nums">
                                     {formatDateTime(selectedTask.created_at)}
                                 </div>
                             </div>

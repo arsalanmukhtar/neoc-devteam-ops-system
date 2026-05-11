@@ -8,8 +8,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Set the theme class before React mounts to avoid a flash of the wrong theme.
+      // Source of truth: localStorage['theme'] === 'dark' | 'light' | null.
+      // null falls through to the OS preference, just like a fresh visit.
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var isDark = stored
+            ? stored === 'dark'
+            : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          // localStorage blocked — fall back to light.
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
-  <body>
+  <body class="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
