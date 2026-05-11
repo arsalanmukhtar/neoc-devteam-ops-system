@@ -3,7 +3,11 @@
 @tailwind utilities;
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+  letter-spacing: -0.005em;
 }
 
 /* --- 1. CORE COLOR SCHEME (CSS Variables) --- */
@@ -32,8 +36,8 @@ body {
   /* Blue for general info/neutral status */
 
   /* --- 3. TYPOGRAPHY & SPACING --- */
-  --font-family-base: 'Poppins';
-  --font-size-base: 16px;
+  --font-family-base: 'Inter';
+  --font-size-base: 14px;
 
   /* Spacing system (based on 8px grid) */
   --space-xs: 4px;

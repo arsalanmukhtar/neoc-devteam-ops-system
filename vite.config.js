@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0",          // ✅ allow access from public IP / LAN
-    port: 5000,
+    port: 5175,
     strictPort: true,
 
     // (optional) if you want Vite to accept requests for these hosts
@@ -18,7 +18,7 @@ export default defineConfig({
 
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: "http://localhost:4000",
         changeOrigin: true,
         secure: false,
       },

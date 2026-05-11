@@ -17,7 +17,7 @@ import TaskListTable from './tasks/TaskListTable';
 import TimeEntryCreateForm from './timeEntries/timeEntryCreateForm';
 import TimeEntryListTable from './timeEntries/timeEntryListTable';
 
-import RequestListTable from './requests/RequestListTable'; // <-- Add this import
+import RequestListTable from './requests/RequestListTable';
 
 import Analytics from './analytics/Analytics';
 
@@ -28,7 +28,6 @@ const Workspace = ({ activeTab, roleId }) => {
         setActiveTopTab(getDefaultTopTab(activeTab));
     }, [activeTab]);
 
-    // Filter out "create" tab for tasks if roleId === 3
     const topTabs =
         activeTab === 'projects'
             ? projectTabs
@@ -48,16 +47,15 @@ const Workspace = ({ activeTab, roleId }) => {
 
     if (!allowedTabs.includes(activeTab)) {
         return (
-            <div className="flex-1 bg-gray-50 min-h-0 h-full p-8 overflow-y-auto flex items-center justify-center">
-                <div className="text-gray-500 text-lg">You do not have access to this section.</div>
+            <div className="flex-1 bg-white min-h-0 h-full flex items-center justify-center">
+                <div className="text-sm text-gray-500">You do not have access to this section.</div>
             </div>
         );
     }
 
-    // Get API endpoint for the current top tab
     const apiEndpoint = topTabs.find(t => t.value === activeTopTab)?.api;
+    const activeTabLabel = topTabs.find(t => t.value === activeTopTab)?.label;
 
-    // Render user tab content dynamically
     const renderUserTabContent = () => {
         switch (activeTopTab) {
             case 'register':
@@ -71,7 +69,7 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'delete':
                 return <UserDelete api={apiEndpoint} />;
             default:
-                return <div className="text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
         }
     };
 
@@ -86,19 +84,18 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'delete':
                 return <ProjectDelete api={apiEndpoint} />;
             default:
-                return <div className="text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
         }
     };
 
     const renderTaskTabContent = () => {
         switch (activeTopTab) {
             case 'create':
-                // Only render if roleId !== 3
                 return roleId !== 3 ? <TaskCreateForm api={apiEndpoint} /> : null;
             case 'list':
                 return <TaskListTable api={apiEndpoint} />;
             default:
-                return <div className="text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
         }
     };
 
@@ -109,71 +106,62 @@ const Workspace = ({ activeTab, roleId }) => {
             case 'list':
                 return <TimeEntryListTable api={apiEndpoint} />;
             default:
-                return <div className="text-gray-500">Tab content will go here.</div>;
+                return <div className="text-sm text-gray-500">Tab content will go here.</div>;
         }
     };
 
-    // Render requests tab content (only for roleId 1 or 2)
     const renderRequestsTabContent = () => {
         if (roleId === 1 || roleId === 2) {
             return <RequestListTable />;
         }
-        return <div className="text-gray-500">You do not have access to this section.</div>;
+        return <div className="text-sm text-gray-500">You do not have access to this section.</div>;
     };
 
-    // Render requests tab content (only for roleId 1 or 2)
     const renderAnalyticsTabContent = () => {
         if (roleId === 1 || roleId === 2) {
             return <Analytics activeTab={activeTopTab} />;
         }
-        return <div className="text-gray-500">You do not have access to this section.</div>;
+        return <div className="text-sm text-gray-500">You do not have access to this section.</div>;
     };
 
-
     return (
-        <div className="relative h-full flex flex-col w-full bg-gray-50 min-h-0 z-0">
-            {/* Top Tabs - sticky at top */}
-            <div className="sticky top-0 z-10 bg-white px-2 pt-4">
-                <div className="sticky top-0 z-10 bg-white px-2 pt-4">
-                    <div className="flex gap-0 border-b border-gray-300">
-                        {topTabs.map((tab, idx) => (
-                            <button
-                                key={tab.value}
-                                className={`relative px-7 py-2 font-semibold transition-all duration-150
-                    bg-white
-                    border border-t-4
-                    ${activeTopTab === tab.value
-                                        ? 'text-stone-700 border-gray-300 border-t-4 border-t-orange-400 bg-white z-10'
-                                        : 'text-gray-400 border-transparent hover:text-red-400'
-                                    }
-                `}
-                                style={{
-                                    borderBottom: 'none',
-                                }}
-                                onClick={() => setActiveTopTab(tab.value)}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+        <div className="relative h-full flex flex-col w-full bg-white min-h-0 z-0">
+            {topTabs.length > 0 && (
+                <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8">
+                    <div className="flex gap-6">
+                        {topTabs.map((tab) => {
+                            const active = activeTopTab === tab.value;
+                            return (
+                                <button
+                                    key={tab.value}
+                                    onClick={() => setActiveTopTab(tab.value)}
+                                    className={`relative whitespace-nowrap py-3.5 text-sm font-medium transition-colors border-b-2 -mb-px
+                                        ${active
+                                            ? 'text-gray-900 border-indigo-600'
+                                            : 'text-gray-500 border-transparent hover:text-gray-900'
+                                        }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
-            {/* Scrollable Workspace Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll p-0">
-                <div className="h-full bg-white shadow flex flex-col justify-start w-full border-gray-300">
-                    <div className="px-4 py-3 flex-shrink-0">
-                        <h3 className="text-xl font-semibold mb-4">
-                            {topTabs.find(t => t.value === activeTopTab)?.label}
-                        </h3>
-                    </div>
-                    <div className="flex-1 min-h-0 px-6 pb-6 overflow-y-auto">
-                        {activeTab === "users" && renderUserTabContent()}
-                        {activeTab === "projects" && renderProjectTabContent()}
-                        {activeTab === "tasks" && renderTaskTabContent()}
-                        {activeTab === "time" && renderTimeTabContent()}
-                        {activeTab === "requests" && renderRequestsTabContent()}
-                        {activeTab === "analytics" && renderAnalyticsTabContent()}
-                    </div>
+            )}
+
+            <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
+                <div className="px-8 py-6">
+                    {activeTabLabel && (
+                        <h2 className="text-base font-semibold text-gray-900 mb-5 tracking-tight">
+                            {activeTabLabel}
+                        </h2>
+                    )}
+                    {activeTab === "users" && renderUserTabContent()}
+                    {activeTab === "projects" && renderProjectTabContent()}
+                    {activeTab === "tasks" && renderTaskTabContent()}
+                    {activeTab === "time" && renderTimeTabContent()}
+                    {activeTab === "requests" && renderRequestsTabContent()}
+                    {activeTab === "analytics" && renderAnalyticsTabContent()}
                 </div>
             </div>
         </div>

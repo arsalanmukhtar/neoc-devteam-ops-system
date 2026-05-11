@@ -18,12 +18,12 @@ const { Pool } = pkg;
 
 // The rest of your code remains largely the same
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 // --- CORS Configuration ---
 const corsOptions = {
   // Allow requests from your Vite development server
-  origin: 'http://localhost:5173', 
+  origin: 'http://localhost:5175',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 };

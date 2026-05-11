@@ -1,0 +1,992 @@
+{
+  "info": {
+    "_postman_id": "9c7a8e4d-0000-4000-8000-neoc-tms-coll1",
+    "name": "NEOC TMS API",
+    "description": "Internal DevTeam Ops System for NEOC. Express + PostgreSQL REST API.\n\nFlow: run `Auth / Login` first — its test script auto-saves `token`, `user_id`, and `role_id` into the active environment so every subsequent request authenticates automatically. Most endpoints are role-gated (1=Admin, 2=Project Manager, 3=Developer).\n\nPath-param IDs (`{{project_id}}`, `{{task_id}}`, `{{entry_id}}`, `{{request_id}}`, `{{target_user_id}}`) live in the environment — populate them either via the auto-capture scripts on create requests or by hand.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            },
+            "description": "Health check. Returns the authenticated user attached by middleware."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe@neoc.gov.pk\",\n  \"password\": \"changeme\",\n  \"role_id\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create a user. `role_id`: 1=Admin, 2=Project Manager, 3=Developer (default if omitted)."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const data = pm.response.json();",
+                  "  if (data && data.token) {",
+                  "    pm.environment.set('token', data.token);",
+                  "    console.log('token saved to environment');",
+                  "  }",
+                  "  if (data && data.user_id) pm.environment.set('user_id', data.user_id);",
+                  "  if (data && data.role_id !== undefined) pm.environment.set('role_id', String(data.role_id));",
+                  "} catch (e) {",
+                  "  console.error('Login capture script failed', e);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@neoc.gov.pk\",\n  \"password\": \"changeme\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticate. Response `{ token, user_id, role_id }` is auto-saved into the active environment by the test script."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns first_name, last_name, email of the authenticated user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "all"]
+            },
+            "description": "Admin only."
+          }
+        },
+        {
+          "name": "List Managers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/managers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "managers"]
+            },
+            "description": "Admin or PM."
+          }
+        },
+        {
+          "name": "List Team Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/team",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "team"]
+            },
+            "description": "Used for task assignment dropdowns. Admin or PM."
+          }
+        },
+        {
+          "name": "View User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/view/{{target_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "view", "{{target_user_id}}"]
+            },
+            "description": "Admin only. Populate `target_user_id` env var."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"email\": \"jane.smith@neoc.gov.pk\",\n  \"role_id\": 2,\n  \"is_active\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/update/{{target_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "update", "{{target_user_id}}"]
+            },
+            "description": "Admin only."
+          }
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/delete/{{target_user_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "delete", "{{target_user_id}}"]
+            },
+            "description": "Admin only. Soft-deactivates the user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const d = pm.response.json();",
+                  "  const id = d?.project_id || d?.project?.project_id || d?.id;",
+                  "  if (id) pm.environment.set('project_id', id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Project Alpha\",\n  \"description\": \"First project for the team\",\n  \"manager_id\": \"{{user_id}}\",\n  \"status\": \"Planning\",\n  \"start_date\": \"2026-05-15\",\n  \"due_date\": \"2026-08-15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "create"]
+            },
+            "description": "Admin or PM only. `manager_id` must be a user with role_id=2."
+          }
+        },
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "list"]
+            }
+          }
+        },
+        {
+          "name": "View Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/view/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "view", "{{project_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Project Alpha (updated)\",\n  \"description\": \"Refined scope\",\n  \"manager_id\": \"{{user_id}}\",\n  \"status\": \"Active\",\n  \"start_date\": \"2026-05-20\",\n  \"due_date\": \"2026-09-30\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/update/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "update", "{{project_id}}"]
+            },
+            "description": "Admin or PM only."
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/delete/{{project_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "projects", "delete", "{{project_id}}"]
+            },
+            "description": "Admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Create Task",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const d = pm.response.json();",
+                  "  const id = d?.task_id || d?.task?.task_id || d?.id;",
+                  "  if (id) pm.environment.set('task_id', id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Setup project repository\",\n  \"description\": \"Initialize the repo and base structure.\",\n  \"assigned_to_id\": \"{{user_id}}\",\n  \"priority\": \"high\",\n  \"status\": \"To Do\",\n  \"due_date\": \"2026-05-25\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "create"]
+            },
+            "description": "Admin or PM only."
+          }
+        },
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "list"]
+            }
+          }
+        },
+        {
+          "name": "View Task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/view/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "view", "{{task_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Setup project repository (updated)\",\n  \"description\": \"Initialize the repo, base structure, and CI.\",\n  \"assigned_to_id\": \"{{user_id}}\",\n  \"priority\": \"medium\",\n  \"status\": \"In Progress\",\n  \"due_date\": \"2026-05-28\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/update/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "update", "{{task_id}}"]
+            },
+            "description": "Admin or PM only."
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/delete/{{task_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tasks", "delete", "{{task_id}}"]
+            },
+            "description": "Admin or PM only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries",
+      "item": [
+        {
+          "name": "Create Time Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const d = pm.response.json();",
+                  "  const id = d?.entry_id || d?.entry?.entry_id || d?.id;",
+                  "  if (id) pm.environment.set('entry_id', id);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"{{task_id}}\",\n  \"start_time\": \"2026-05-12T09:00:00+05:00\",\n  \"end_time\": \"2026-05-12T12:30:00+05:00\",\n  \"notes\": \"Initial setup work\",\n  \"priority\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/time/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "time", "create"]
+            },
+            "description": "Authenticated. `user_id` is taken from the JWT, not the body. For role 3 (Developer), in normal app flow use the `Requests / Create Time Entry Request` endpoint instead — it routes through the approval workflow."
+          }
+        },
+        {
+          "name": "List Time Entries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/time/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "time", "list"]
+            },
+            "description": "Returns the authenticated user's own time entries."
+          }
+        },
+        {
+          "name": "Update Time Entry",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"{{task_id}}\",\n  \"start_time\": \"2026-05-12T10:00:00+05:00\",\n  \"end_time\": \"2026-05-12T13:00:00+05:00\",\n  \"notes\": \"Updated work log\",\n  \"priority\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/time/update/{{entry_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "time", "update", "{{entry_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Time Entry",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/time/delete/{{entry_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "time", "delete", "{{entry_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Requests",
+      "item": [
+        {
+          "name": "Create Time Entry Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const d = pm.response.json();",
+                  "  const rid = d?.request_id || d?.id;",
+                  "  if (rid) pm.environment.set('request_id', rid);",
+                  "  const eid = d?.entry_id;",
+                  "  if (eid) pm.environment.set('entry_id', eid);",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"{{task_id}}\",\n  \"start_time\": \"2026-05-12T09:00:00+05:00\",\n  \"end_time\": \"2026-05-12T12:30:00+05:00\",\n  \"notes\": \"Initial setup work\",\n  \"priority\": \"medium\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/time-entry",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "time-entry"]
+            },
+            "description": "Developer only (role_id=3). Creates a pending row in `time_entries` AND a paired row in `requests`. Pass `entry_id` in the body to file an UPDATE request against an existing entry."
+          }
+        },
+        {
+          "name": "List Time Entry Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/time-entry?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "time-entry"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Optional. Values: pending | accepted | rejected. Omit to fetch all."
+                }
+              ]
+            },
+            "description": "Admin or PM. Returns requests joined with user and task info."
+          }
+        },
+        {
+          "name": "Accept Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_comment\": \"Approved.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/time-entry/{{request_id}}/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "time-entry", "{{request_id}}", "accept"]
+            },
+            "description": "Admin or PM. Promotes the linked time entry to `accepted` and stamps the request with reviewer info."
+          }
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_comment\": \"Needs more detail in notes.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/requests/time-entry/{{request_id}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "requests", "time-entry", "{{request_id}}", "reject"]
+            },
+            "description": "Admin or PM. Marks the linked time entry `rejected`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Admin only. All endpoints are GET with no body.",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "User Count by Role",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/user-count-by-role",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "user-count-by-role"]
+                }
+              }
+            },
+            {
+              "name": "Active vs Inactive Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/active-inactive-users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "active-inactive-users"]
+                }
+              }
+            },
+            {
+              "name": "Users Created per Month",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/users-created-per-month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "users-created-per-month"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Projects",
+          "item": [
+            {
+              "name": "Projects by Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/projects-by-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "projects-by-status"]
+                }
+              }
+            },
+            {
+              "name": "Projects per Manager",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/projects-per-manager",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "projects-per-manager"]
+                }
+              }
+            },
+            {
+              "name": "Projects Created per Month",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/projects-created-per-month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "projects-created-per-month"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tasks",
+          "item": [
+            {
+              "name": "Task Distribution by Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/task-distribution-by-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "task-distribution-by-status"]
+                }
+              }
+            },
+            {
+              "name": "Task Distribution by Priority",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/task-distribution-by-priority",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "task-distribution-by-priority"]
+                }
+              }
+            },
+            {
+              "name": "Tasks Assigned to Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/tasks-assigned-to-users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "tasks-assigned-to-users"]
+                }
+              }
+            },
+            {
+              "name": "Tasks per Project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/tasks-per-project",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "tasks-per-project"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Time Entries",
+          "item": [
+            {
+              "name": "Hours Logged per User",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/hours-logged-per-user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "hours-logged-per-user"]
+                }
+              }
+            },
+            {
+              "name": "Hours Logged per Project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/hours-logged-per-project",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "hours-logged-per-project"]
+                }
+              }
+            },
+            {
+              "name": "Time Spent per Task",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/time-spent-per-task",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "time-spent-per-task"]
+                }
+              }
+            },
+            {
+              "name": "Daily Activity Trend",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/daily-activity-trend",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "daily-activity-trend"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Requests",
+          "item": [
+            {
+              "name": "Requests Count by Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/requests-count-by-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "requests-count-by-status"]
+                }
+              }
+            },
+            {
+              "name": "Requests per User",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/requests-per-user",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "requests-per-user"]
+                }
+              }
+            },
+            {
+              "name": "Request Processing Time",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/request-processing-time",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "request-processing-time"]
+                }
+              }
+            },
+            {
+              "name": "Daily Requests over Time",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/daily-requests-over-time",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "daily-requests-over-time"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Team Utilization",
+          "item": [
+            {
+              "name": "Under-Utilized Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/under-utilized-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "under-utilized-members"]
+                }
+              }
+            },
+            {
+              "name": "Over-Utilized Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/over-utilized-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "over-utilized-members"]
+                }
+              }
+            },
+            {
+              "name": "Neglected Tasks Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/neglected-tasks-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "neglected-tasks-members"]
+                }
+              }
+            },
+            {
+              "name": "Mostly Low-Priority Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/mostly-low-priority-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "mostly-low-priority-members"]
+                }
+              }
+            },
+            {
+              "name": "Urgent Task Candidates",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/urgent-task-candidates",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "urgent-task-candidates"]
+                }
+              }
+            },
+            {
+              "name": "Highest Completion Rate Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/highest-completion-rate-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "highest-completion-rate-members"]
+                }
+              }
+            },
+            {
+              "name": "Idle Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/idle-users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "idle-users"]
+                }
+              }
+            },
+            {
+              "name": "Too Many High-Priority Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/too-many-high-priority-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "too-many-high-priority-members"]
+                }
+              }
+            },
+            {
+              "name": "Avg Hours per Task",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/avg-hours-per-task",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "avg-hours-per-task"]
+                }
+              }
+            },
+            {
+              "name": "Delaying Requests Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/delaying-requests-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "delaying-requests-members"]
+                }
+              }
+            },
+            {
+              "name": "Urgent Requests Handled Members",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/urgent-requests-handled-members",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "urgent-requests-handled-members"]
+                }
+              }
+            },
+            {
+              "name": "Workload Heatmap",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/workload-heatmap",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "analytics", "workload-heatmap"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000",
+      "type": "string"
+    }
+  ]
+}
