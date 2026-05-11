@@ -1,468 +1,242 @@
-import React, { useState, useEffect, useRef } from "react";
-import NotificationAlert from "../NotificationAlert";
+import React, { useState, useEffect } from 'react';
+import NotificationAlert from '../NotificationAlert';
+import Button from '../ui/Button';
+import Field, { Input, Select } from '../ui/Field';
+import RichTextEditor from '../ui/RichTextEditor';
 
-import { PiHighlighterDuotone } from "react-icons/pi";
-import { IoMdClose } from "react-icons/io";
-
-import { Select } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
-import Blockquote from '@tiptap/extension-blockquote';
-import Color from '@tiptap/extension-color';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Highlight from '@tiptap/extension-highlight';
-
-// const baseURL = "http://localhost:3000";
-
-const priorityOptions = [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
 ];
 
-const statusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
+const STATUS_OPTIONS = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
 ];
 
-const TaskCreateForm = ({ api = "/api/tasks/create", onCreated }) => {
-    const [form, setForm] = useState({
-        project_id: "",
-        title: "",
-        description: "",
-        assigned_to_id: "",
-        priority: "",
-        status: "",
-        due_date: "",
-    });
+const emptyForm = {
+    project_id: '',
+    title: '',
+    description: '',
+    assigned_to_id: '',
+    priority: '',
+    status: '',
+    due_date: '',
+};
 
+const TaskCreateForm = ({ api = '/api/tasks/create', onCreated }) => {
+    const [form, setForm] = useState(emptyForm);
     const [projects, setProjects] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const colorInputRef = useRef();
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-    // Fetch projects for Select
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        fetch("/api/projects/list", {
+        const token = localStorage.getItem('token');
+        fetch('/api/projects/list', {
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
         })
-            .then((res) => res.json())
-            .then((data) => setProjects(Array.isArray(data) ? data : []))
-            .catch((err) => console.error("Error fetching projects:", err));
+            .then((r) => r.json())
+            .then((d) => setProjects(Array.isArray(d) ? d : []))
+            .catch(() => {});
     }, []);
 
-    // Fetch team members for Select
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        fetch("/api/users/team", {
+        const token = localStorage.getItem('token');
+        fetch('/api/users/team', {
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
         })
-            .then((res) => res.json())
-            .then((data) => setUsers(Array.isArray(data) ? data : []))
-            .catch((err) => console.error("Error fetching users:", err));
+            .then((r) => r.json())
+            .then((d) => setUsers(Array.isArray(d) ? d : []))
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
         if (success || error) {
-            const timer = setTimeout(() => {
+            const t = setTimeout(() => {
                 setSuccess('');
                 setError('');
             }, 3000);
-            return () => clearTimeout(timer);
+            return () => clearTimeout(t);
         }
     }, [success, error]);
 
-    // TipTap editor for description
-    const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Color,
-            TextStyle,
-            Highlight
-        ],
-        content: "",
-        onUpdate: ({ editor }) =>
-            setForm((f) => ({ ...f, description: editor.getHTML() })),
-    });
-
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    const handleSelectChange = (name, value) => {
-        setForm({ ...form, [name]: value });
-    };
-
-    const handleDateChange = (name, value) => {
-        setForm({ ...form, [name]: value });
-    };
+    const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError("");
-        setSuccess("");
-        const token = localStorage.getItem("token");
-
+        setError('');
+        setSuccess('');
+        const token = localStorage.getItem('token');
         try {
             const res = await fetch(api, {
-                method: "POST",
+                method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(form),
             });
-
             const data = await res.json();
             if (res.ok) {
-                setSuccess("Task created successfully!");
-                setForm({
-                    project_id: "",
-                    title: "",
-                    description: "",
-                    assigned_to_id: "",
-                    priority: "",
-                    status: "",
-                    due_date: "",
-                });
-
-                if (editor) editor.commands.setContent("");
-
+                setSuccess('Task created successfully.');
+                setForm(emptyForm);
                 if (onCreated) onCreated(data);
             } else {
-                setError(data.error || "Creation failed");
+                setError(data.error || 'Creation failed.');
             }
         } catch {
-            setError("Network error");
+            setError('Network error.');
         }
-
         setLoading(false);
     };
 
     return (
         <form
-            className="w-full max-w-2xl mx-auto flex flex-col gap-6 font-sans"
+            className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-5"
             onSubmit={handleSubmit}
         >
-            {/* Project Select */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Project</label>
+            <div>
+                <h2 className="text-base font-semibold text-gray-900 tracking-tight">
+                    Create task
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                    Add a task under an existing project and assign it to a team member.
+                </p>
+            </div>
+
+            <Field label="Project" id="project_id" required>
                 <Select
-                    placeholder="Select Project"
-                    data={projects.map((p) => ({
-                        value: String(p.project_id),
-                        label: p.name,
-                    }))}
+                    id="project_id"
                     value={form.project_id}
-                    onChange={(value) => handleSelectChange("project_id", value)}
-                    searchable
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    radius="xl"
-                    size="md"
+                    onChange={(e) => setField('project_id', e.target.value)}
                     required
-                />
-            </div>
+                >
+                    <option value="" disabled>
+                        Select a project
+                    </option>
+                    {projects.map((p) => (
+                        <option key={p.project_id} value={p.project_id}>
+                            {p.name}
+                        </option>
+                    ))}
+                </Select>
+            </Field>
 
-            {/* Title */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Title</label>
-                <input
-                    type="text"
+            <Field label="Title" id="title" required>
+                <Input
+                    id="title"
                     name="title"
-                    className="input-border"
                     value={form.title}
-                    onChange={handleChange}
+                    onChange={(e) => setField('title', e.target.value)}
+                    placeholder="e.g. Setup project repository"
                     required
                 />
-            </div>
+            </Field>
 
-            {/* Description Editor */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Description</label>
-                {/* Toolbar */}
-                <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleBold().run()}
-                        disabled={!editor}
-                    >
-                        <b>B</b>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleItalic().run()}
-                        disabled={!editor}
-                    >
-                        <i>I</i>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleUnderline().run()}
-                        disabled={!editor}
-                    >
-                        <u>U</u>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleBulletList().run()}
-                        disabled={!editor}
-                    >
-                        •
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleOrderedList().run()}
-                        disabled={!editor}
-                    >
-                        1.
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleBlockquote().run()}
-                        disabled={!editor}
-                    >
-                        ❝
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleHighlight().run()}
-                        disabled={!editor}
-                        title="Highlight"
-                        style={{
-                            background: editor && editor.isActive('highlight') ? '#ffe066' : 'transparent',
-                            borderRadius: '4px',
-                            padding: '4px',
-                            transition: 'background 0.2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <PiHighlighterDuotone
-                            size={18}
-                            color={editor && editor.isActive('highlight') ? '#a16207' : '#555'}
-                            style={{ transition: 'color 0.2s' }}
-                        />
-                    </button>
-                    <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
-                        <button
-                            type="button"
-                            onClick={() => colorInputRef.current && colorInputRef.current.click()}
-                            disabled={!editor}
-                            title="Pick Color"
-                            style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
-                        >
-                            <span
-                                style={{
-                                    display: 'inline-block',
-                                    width: '20px',
-                                    height: '20px',
-                                    background: editor && editor.getAttributes('textStyle').color ? editor.getAttributes('textStyle').color : '#eee',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    verticalAlign: 'middle',
-                                    marginRight: '2px',
-                                    transition: 'background 0.2s'
-                                }}
-                            />
-                        </button>
-                        <input
-                            type="color"
-                            ref={colorInputRef}
-                            style={{
-                                display: 'block',
-                                position: 'absolute',
-                                left: 0,
-                                top: '100%',
-                                zIndex: 10,
-                                marginTop: '2x',
-                                border: 'none',
-                                background: 'transparent',
-                                padding: 0,
-                                width: '20px',
-                                height: '20px',
-                                cursor: 'pointer',
-                                opacity: 0
-                            }}
-                            onChange={e => {
-                                if (editor) {
-                                    editor.chain().focus().setColor(e.target.value).run();
-                                }
-                            }}
-                            tabIndex={-1}
-                        />
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().unsetColor().run()}
-                        disabled={!editor}
-                        title="Remove Color"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '2px',
-                            borderRadius: '4px',
-                            background: 'transparent',
-                            transition: 'background 0.2s'
-                        }}
-                    >
-                        <IoMdClose size={18} color="#555" />
-                    </button>
-                </div>
-
-                {/* Content Box */}
-                <div className="sidebar-scroll border border-gray-300 p-3 min-h-[150px] h-96 bg-white overflow-y-auto">
-                    <EditorContent editor={editor} className="tiptap" />
-                </div>
-            </div>
-
-            {/* Assigned User Select */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Assigned To</label>
-                <Select
-                    placeholder="Select User"
-                    data={users.map((u) => ({
-                        value: String(u.user_id),
-                        label: `${u.first_name} ${u.last_name}`,
-                    }))}
-                    value={form.assigned_to_id}
-                    onChange={(value) => handleSelectChange("assigned_to_id", value)}
-                    searchable
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    radius="xl"
-                    size="md"
-                    required
+            <Field label="Description">
+                <RichTextEditor
+                    value={form.description}
+                    onChange={(html) => setField('description', html)}
                 />
+            </Field>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Assigned to" id="assigned_to_id" required>
+                    <Select
+                        id="assigned_to_id"
+                        value={form.assigned_to_id}
+                        onChange={(e) => setField('assigned_to_id', e.target.value)}
+                        required
+                    >
+                        <option value="" disabled>
+                            Select a team member
+                        </option>
+                        {users.map((u) => (
+                            <option key={u.user_id} value={u.user_id}>
+                                {u.first_name} {u.last_name}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
+
+                <Field label="Due date" id="due_date" required>
+                    <Input
+                        type="date"
+                        id="due_date"
+                        value={form.due_date}
+                        onChange={(e) => setField('due_date', e.target.value)}
+                        required
+                    />
+                </Field>
+
+                <Field label="Priority" id="priority" required>
+                    <Select
+                        id="priority"
+                        value={form.priority}
+                        onChange={(e) => setField('priority', e.target.value)}
+                        required
+                    >
+                        <option value="" disabled>
+                            Select priority
+                        </option>
+                        {PRIORITY_OPTIONS.map((p) => (
+                            <option key={p.value} value={p.value}>
+                                {p.label}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
+
+                <Field label="Status" id="status" required>
+                    <Select
+                        id="status"
+                        value={form.status}
+                        onChange={(e) => setField('status', e.target.value)}
+                        required
+                    >
+                        <option value="" disabled>
+                            Select status
+                        </option>
+                        {STATUS_OPTIONS.map((s) => (
+                            <option key={s.value} value={s.value}>
+                                {s.label}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
             </div>
 
-            {/* Priority */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Priority</label>
-                <Select
-                    placeholder="Select Priority"
-                    data={priorityOptions}
-                    value={form.priority}
-                    onChange={(value) => handleSelectChange("priority", value)}
-                    searchable
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    radius="xl"
-                    size="md"
-                    required
-                />
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setForm(emptyForm)}
+                    disabled={loading}
+                >
+                    Clear
+                </Button>
+                <Button type="submit" loading={loading}>
+                    Create task
+                </Button>
             </div>
 
-            {/* Status */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Status</label>
-                <Select
-                    placeholder="Select Status"
-                    data={statusOptions}
-                    value={form.status}
-                    onChange={(value) => handleSelectChange("status", value)}
-                    searchable
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    radius="xl"
-                    size="md"
-                    required
-                />
-            </div>
-
-            {/* Due Date */}
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Due Date</label>
-                <DatePickerInput
-                    placeholder="Due Date"
-                    value={form.due_date}
-                    onChange={(value) => handleDateChange("due_date", value)}
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    radius="xl"
-                    size="md"
-                    required
-                />
-            </div>
-
-            {/* MESSAGES */}
             {error && (
-                <NotificationAlert
-                    type="error"
-                    message={error}
-                    onClose={() => setError("")}
-                />
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
             )}
             {success && (
-                <NotificationAlert
-                    type="success"
-                    message={success}
-                    onClose={() => setSuccess("")}
-                />
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
             )}
-
-            {/* SUBMIT */}
-            <div className="flex justify-end gap-4">
-                <button
-                    type="button"
-                    className="mt-6 bg-red-400 text-white font-semibold py-2 w-40 rounded-full hover:bg-red-500 transition"
-                    onClick={() => {
-                        setForm({
-                            project_id: "",
-                            title: "",
-                            description: "",
-                            assigned_to_id: "",
-                            priority: "",
-                            status: "",
-                            due_date: "",
-                        });
-                        if (editor) editor.commands.setContent("");
-                    }}
-                    disabled={loading}
-                >
-                    Clear Form
-                </button>
-                <button
-                    type="submit"
-                    className="mt-6 bg-green-500 text-white font-semibold py-2 w-40 rounded-full hover:bg-green-600 transition"
-                    disabled={loading}
-                >
-                    {loading ? "Creating..." : "Create Task"}
-                </button>
-            </div>
         </form>
     );
 };

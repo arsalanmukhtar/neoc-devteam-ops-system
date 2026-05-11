@@ -1,217 +1,153 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
-import { Modal, Button, Select } from '@mantine/core';
+import { LuListChecks, LuFolderKanban, LuCalendar } from 'react-icons/lu';
 import { formatDate, formatDateTime } from '@src/utils/dateFormatter';
+import NotificationAlert from '../NotificationAlert';
+import StatusPill from '../ui/StatusPill';
+import { toneFor } from '../ui/statusTone';
+import Card from '../ui/Card';
+import Avatar from '../ui/Avatar';
+import Drawer from '../ui/Drawer';
+import EmptyState from '../ui/EmptyState';
+import Toolbar from '../ui/Toolbar';
+import Spinner from '../ui/Spinner';
+import Button from '../ui/Button';
+import Field, { Select } from '../ui/Field';
 
-// const baseURL = 'http://localhost:3000';
-
-const statusColors = {
-    pending: { bg: '#fef3c7', text: '#78350f', border: '#fcd34d' },        // Amber
-    in_progress: { bg: '#dbeafe', text: '#1e3a8a', border: '#93c5fd' },    // Blue
-    completed: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },      // Green
-};
-
-const priorityColors = {
-    low: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },      // Blue
-    medium: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // Amber
-    high: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },     // Red
-};
-
-const statusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "completed", label: "Completed" },
+const STATUS_OPTIONS = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' },
 ];
 
-const priorityOptions = [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
 ];
 
-const TaskListTable = ({ api = "/api/tasks/list" }) => {
+const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '').trim();
+};
+
+const titleCase = (s) => {
+    if (!s) return '';
+    return s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const TaskListTable = ({ api = '/api/tasks/list' }) => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [rowSelection, setRowSelection] = useState({});
-    const [modalOpened, setModalOpened] = useState(false);
-    const [selectedTask, setSelectedTask] = useState(null);
-    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [search, setSearch] = useState('');
     const [roleId, setRoleId] = useState(null);
     const [userId, setUserId] = useState(null);
-    const [modalStatus, setModalStatus] = useState("");
-    const [modalPriority, setModalPriority] = useState("");
-    const [saveLoading, setSaveLoading] = useState(false);
 
-    // Get role_id and user_id from localStorage
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [drStatus, setDrStatus] = useState('');
+    const [drPriority, setDrPriority] = useState('');
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
     useEffect(() => {
-        setRoleId(Number(localStorage.getItem("role_id")));
-        setUserId(localStorage.getItem("user_id"));
+        setRoleId(Number(localStorage.getItem('role_id')));
+        setUserId(localStorage.getItem('user_id'));
     }, []);
 
-    // Fetch tasks
     useEffect(() => {
         const token = localStorage.getItem('token');
         fetch(api, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         })
-            .then(res => res.json())
-            .then(data => {
-                setTasks(Array.isArray(data) ? data : []);
+            .then((r) => r.json())
+            .then((d) => {
+                setTasks(Array.isArray(d) ? d : []);
                 setLoading(false);
-            });
+            })
+            .catch(() => setLoading(false));
     }, [api]);
 
-    const columns = useMemo(
-        () => [
-            {
-                accessorKey: 'title',
-                header: 'Title',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ row }) => (
-                    <span
-                        className='text-xs'
-                        style={{
-                            color: '#2563eb',
-                            cursor: 'pointer',
-                            fontWeight: 500,
-                            transition: 'color 0.2s',
-                        }}
-                        onClick={() => {
-                            setSelectedTask(row.original);
-                            setModalStatus(row.original.status);
-                            setModalPriority(row.original.priority);
-                            setModalOpened(true);
-                        }}
-                    >
-                        {row.original.title}
-                    </span>
-                ),
-            },
-            {
-                accessorKey: 'assigned_to_id',
-                header: 'Assigned To',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ row }) => (
-                    <span className="text-base text-xs text-gray-700">
-                        {row.original.assigned_first_name} {row.original.assigned_last_name}
-                    </span>
-                ),
-            },
-            {
-                accessorKey: 'project_name',
-                header: 'Project',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span className="text-xs text-gray-700">{cell.getValue()}</span>,
-            },
-            {
-                accessorKey: 'priority',
-                header: 'Priority',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => {
-                    const value = cell.getValue()?.toLowerCase();
-                    const colors = priorityColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
-                    const label = cell.getValue()?.charAt(0).toUpperCase() + cell.getValue()?.slice(1);
-                    return (
-                        <span
-                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
-                            style={{
-                                backgroundColor: colors.bg,
-                                color: colors.text,
-                                border: `1px solid ${colors.border}`,
-                            }}
-                        >
-                            <span
-                                style={{
-                                    width: '6px',
-                                    height: '6px',
-                                    borderRadius: '50%',
-                                    backgroundColor: colors.text,
-                                }}
-                            />
-                            {label}
-                        </span>
-                    );
-                },
-            },
-            {
-                accessorKey: 'status',
-                header: 'Status',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => {
-                    const value = cell.getValue()?.toLowerCase();
-                    const colors = statusColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
-                    const label = cell.getValue()?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    return (
-                        <span
-                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
-                            style={{
-                                backgroundColor: colors.bg,
-                                color: colors.text,
-                                border: `1px solid ${colors.border}`,
-                            }}
-                        >
-                            <span
-                                style={{
-                                    width: '6px',
-                                    height: '6px',
-                                    borderRadius: '50%',
-                                    backgroundColor: colors.text,
-                                }}
-                            />
-                            {label}
-                        </span>
-                    );
-                },
-            },
-            {
-                accessorKey: 'due_date',
-                header: 'Due Date',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => <span className="text-xs text-gray-700">{formatDate(cell.getValue())}</span>,
-            },
-        ],
-        []
-    );
+    useEffect(() => {
+        if (success || error) {
+            const t = setTimeout(() => {
+                setSuccess('');
+                setError('');
+            }, 3000);
+            return () => clearTimeout(t);
+        }
+    }, [success, error]);
 
-    const table = useMantineReactTable({
-        columns,
-        data: tasks,
-        enableColumnOrdering: true,
-        enableRowSelection: true,
-        enablePagination: true,
-        onRowSelectionChange: setRowSelection,
-        state: { rowSelection },
-        mantineTableProps: {
-            striped: true,
-            highlightOnHover: true,
-            withColumnBorders: true,
-            style: { background: '#f8fafc', borderRadius: '8px' },
-        },
-        mantineTableBodyRowProps: ({ row }) => ({
-            style: {
-                background: '#f8fafc',
-            },
-        }),
-        mantineTableBodyCellProps: {
-            sx: { background: 'inherit' },
-        },
-        mantineTableHeadCellProps: {
-            sx: {
-                background: '#e0e7ef',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-            },
-        },
-        mantineTableContainerProps: {
-            sx: { background: '#f8fafc', borderRadius: '8px', padding: '1rem' },
-        },
-    });
+    const filtered = useMemo(() => {
+        if (!search.trim()) return tasks;
+        const q = search.toLowerCase();
+        return tasks.filter(
+            (t) =>
+                t.title?.toLowerCase().includes(q) ||
+                t.project_name?.toLowerCase().includes(q) ||
+                `${t.assigned_first_name} ${t.assigned_last_name}`.toLowerCase().includes(q)
+        );
+    }, [tasks, search]);
 
-    const handleDeleteTask = async () => {
+    const openTask = (task) => {
+        setSelectedTask(task);
+        setDrStatus(task.status || '');
+        setDrPriority(task.priority || '');
+    };
+
+    const closeDrawer = () => {
+        setSelectedTask(null);
+        setError('');
+        setSuccess('');
+    };
+
+    const canEditStatus = selectedTask
+        ? roleId !== 3 || selectedTask.assigned_to_id === userId
+        : false;
+    const canEditPriority = roleId !== 3;
+    const canDelete = roleId !== 3;
+
+    const handleSave = async () => {
+        if (!selectedTask) return;
+        setSaveLoading(true);
+        setError('');
+        setSuccess('');
+        const token = localStorage.getItem('token');
+        try {
+            const body = canEditPriority
+                ? { status: drStatus, priority: drPriority }
+                : { status: drStatus };
+            const res = await fetch(`/api/tasks/update/${selectedTask.task_id}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body),
+            });
+            if (res.ok) {
+                setSuccess('Task updated.');
+                setTasks((prev) =>
+                    prev.map((t) =>
+                        t.task_id === selectedTask.task_id ? { ...t, ...body } : t
+                    )
+                );
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setError(data.error || 'Update failed.');
+            }
+        } catch {
+            setError('Network error.');
+        }
+        setSaveLoading(false);
+    };
+
+    const handleDelete = async () => {
         if (!selectedTask) return;
         setDeleteLoading(true);
         const token = localStorage.getItem('token');
@@ -219,218 +155,229 @@ const TaskListTable = ({ api = "/api/tasks/list" }) => {
             const res = await fetch(`/api/tasks/delete/${selectedTask.task_id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
             });
             if (res.ok) {
-                setTasks(tasks.filter(task => task.task_id !== selectedTask.task_id));
-                setModalOpened(false);
-                setSelectedTask(null);
+                setSuccess('Task deleted.');
+                setTasks((prev) => prev.filter((t) => t.task_id !== selectedTask.task_id));
+                closeDrawer();
+            } else {
+                const data = await res.json().catch(() => ({}));
+                setError(data.error || 'Delete failed.');
             }
-        } catch (err) {
-            // Optionally handle error
+        } catch {
+            setError('Network error.');
         }
         setDeleteLoading(false);
     };
 
-    const handleSaveTask = async () => {
-        if (!selectedTask) return;
-        setSaveLoading(true);
-        const token = localStorage.getItem('token');
-        try {
-            await fetch(`/api/tasks/update/${selectedTask.task_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    status: modalStatus,
-                    priority: modalPriority
-                }),
-            });
-            setTasks(tasks =>
-                tasks.map(task =>
-                    task.task_id === selectedTask.task_id
-                        ? { ...task, status: modalStatus, priority: modalPriority }
-                        : task
-                )
-            );
-            setModalOpened(false);
-            setSelectedTask(null);
-        } catch (err) {
-            // Optionally handle error
-        }
-        setSaveLoading(false);
-    };
-
-    // Check if role 3 user can edit status for this task
-    const canEditStatus = () => {
-        if (roleId !== 3) return true;
-        return selectedTask?.assigned_to_id === userId;
-    };
-
     if (loading) {
         return (
-            <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
-                Loading...
-            </div>
-        );
-    }
-
-    if (!tasks.length) {
-        return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#e53e3e', background: '#f8fafc', borderRadius: '8px' }}>
-                No tasks found or unauthorized.
+            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+                <Spinner size={16} />
+                <span className="text-sm">Loading tasks…</span>
             </div>
         );
     }
 
     return (
-        <>
-            <MantineReactTable table={table} />
-            <Modal
-                opened={modalOpened}
-                onClose={() => setModalOpened(false)}
-                title={
-                    <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
-                        <span className='text-stone-700 text-2xl'>Task Details</span>
-                    </div>
+        <div>
+            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
+                    List all Tasks
+                </h2>
+                <Toolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    searchPlaceholder="Search by title, project, or assignee…"
+                    right={
+                        <span className="text-xs text-gray-500 tabular-nums">
+                            {filtered.length} {filtered.length === 1 ? 'task' : 'tasks'}
+                        </span>
+                    }
+                />
+            </div>
+
+            {filtered.length === 0 ? (
+                <EmptyState
+                    icon={LuListChecks}
+                    title={tasks.length === 0 ? 'No tasks yet' : 'No matches'}
+                    description={
+                        tasks.length === 0
+                            ? 'Tasks created under a project will appear here.'
+                            : 'Try a different search term.'
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((t) => (
+                        <Card key={t.task_id} onClick={() => openTask(t)}>
+                            <div className="flex items-center justify-between mb-3 gap-2">
+                                <StatusPill tone={toneFor(t.priority)}>
+                                    {titleCase(t.priority)}
+                                </StatusPill>
+                                <StatusPill tone={toneFor(t.status)}>
+                                    {titleCase(t.status)}
+                                </StatusPill>
+                            </div>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                                {t.title}
+                            </h3>
+                            <p className="text-xs text-gray-500 mb-4 min-h-[2rem] line-clamp-2">
+                                {stripHtml(t.description) || 'No description.'}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-3">
+                                <LuFolderKanban size={12} className="text-gray-400 flex-shrink-0" />
+                                <span className="truncate">{t.project_name}</span>
+                            </div>
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Avatar
+                                        firstName={t.assigned_first_name}
+                                        lastName={t.assigned_last_name}
+                                        size="xs"
+                                    />
+                                    <span className="text-xs text-gray-600 truncate">
+                                        {t.assigned_first_name} {t.assigned_last_name}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-gray-500 flex-shrink-0 tabular-nums flex items-center gap-1">
+                                    <LuCalendar size={11} />
+                                    {formatDate(t.due_date)}
+                                </span>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            <Drawer
+                open={!!selectedTask}
+                onClose={closeDrawer}
+                title={selectedTask?.title}
+                subtitle={selectedTask?.project_name}
+                width="lg"
+                footer={
+                    <>
+                        {canDelete && (
+                            <Button
+                                variant="dangerGhost"
+                                onClick={handleDelete}
+                                loading={deleteLoading}
+                                disabled={saveLoading}
+                            >
+                                Delete task
+                            </Button>
+                        )}
+                        <div className="flex-1" />
+                        <Button
+                            variant="secondary"
+                            onClick={closeDrawer}
+                            disabled={saveLoading || deleteLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSave} loading={saveLoading}>
+                            Save changes
+                        </Button>
+                    </>
                 }
-                centered
-                size="lg"
-                overlayProps={{ blur: 4 }}
-                className='sidebar-scroll'
             >
                 {selectedTask && (
-                    <div className="p-4 bg-white rounded-lg shadow space-y-6">
-                        {/* Title */}
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Title</span>
-                            <span className="text-lg font-bold text-blue-400">{selectedTask.title}</span>
-                        </div>
-                        {/* Description */}
-                        <div className="sidebar-scroll flex flex-col h-96 overflow-y-auto">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Description</span>
+                    <div className="space-y-5">
+                        <div>
+                            <span className="span-label-style">Description</span>
                             <div
-                                className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
-                                dangerouslySetInnerHTML={{ __html: selectedTask.description }}
+                                className="tiptap mt-1.5 text-sm text-gray-700 max-h-64 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                dangerouslySetInnerHTML={{
+                                    __html:
+                                        selectedTask.description ||
+                                        '<p class="text-gray-400">No description.</p>',
+                                }}
                             />
                         </div>
-                        {/* Project */}
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Project</span>
-                            <span className="text-base text-gray-700">{selectedTask.project_name}</span>
-                        </div>
-                        {/* Priority, Status, Due Date */}
-                        <div className="grid grid-cols-3 gap-6">
-                            {/* Assigned To */}
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Assigned To</span>
-                                <span className="text-base text-gray-700">{selectedTask.assigned_first_name} {selectedTask.assigned_last_name}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Priority</span>
-                                {roleId !== 3 ? (
-                                    <Select
-                                        data={priorityOptions}
-                                        value={modalPriority}
-                                        onChange={setModalPriority}
-                                        classNames={{
-                                            input: 'input-border font-sans',
-                                            dropdown: 'font-sans',
-                                            item: 'font-sans'
-                                        }}
-                                        size="sm"
-                                        radius="xl"
-                                        className="w-full"
-                                    />
-                                ) : (
-                                    <span 
-                                        className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
-                                        style={{
-                                            backgroundColor: priorityColors[selectedTask.priority?.toLowerCase()]?.bg || '#f3f4f6',
-                                            color: priorityColors[selectedTask.priority?.toLowerCase()]?.text || '#6b7280',
-                                            border: `1px solid ${priorityColors[selectedTask.priority?.toLowerCase()]?.border || '#d1d5db'}`,
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                width: '6px',
-                                                height: '6px',
-                                                borderRadius: '50%',
-                                                backgroundColor: priorityColors[selectedTask.priority?.toLowerCase()]?.text || '#6b7280',
-                                            }}
-                                        />
-                                        {selectedTask.priority?.charAt(0).toUpperCase() + selectedTask.priority?.slice(1)}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Field label="Status" id="dr_status">
                                 <Select
-                                    data={statusOptions}
-                                    value={modalStatus}
-                                    onChange={setModalStatus}
-                                    disabled={!canEditStatus()}
-                                    classNames={{
-                                        input: 'input-border font-sans',
-                                        dropdown: 'font-sans',
-                                        item: 'font-sans'
-                                    }}
-                                    size="sm"
-                                    radius="xl"
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            {/* Due Date */}
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
-                                <span className="text-base text-gray-700">{formatDate(selectedTask.due_date)}</span>
-                            </div>
-                            {/* Created At */}
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Created At</span>
-                                <span className="text-base text-gray-700">{formatDateTime(selectedTask.created_at)}</span>
-                            </div>
-                        </div>
-                        {/* Modal Action Buttons */}
-                        <div className="flex justify-center gap-4 mt-8">
-                            <Button
-                                color="gray"
-                                variant="outline"
-                                className="w-40 rounded-full"
-                                onClick={() => setModalOpened(false)}
-                                disabled={saveLoading || deleteLoading}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                color="green"
-                                className="w-40 rounded-full"
-                                loading={saveLoading}
-                                onClick={handleSaveTask}
-                            >
-                                Save
-                            </Button>
-                            {roleId !== 3 && (
-                                <Button
-                                    color="red"
-                                    className="w-40 rounded-full"
-                                    loading={deleteLoading}
-                                    onClick={handleDeleteTask}
+                                    id="dr_status"
+                                    value={drStatus}
+                                    onChange={(e) => setDrStatus(e.target.value)}
+                                    disabled={!canEditStatus}
                                 >
-                                    Delete Task
-                                </Button>
-                            )}
+                                    {STATUS_OPTIONS.map((s) => (
+                                        <option key={s.value} value={s.value}>
+                                            {s.label}
+                                        </option>
+                                    ))}
+                                </Select>
+                                {!canEditStatus && (
+                                    <p className="text-xs text-gray-500 mt-1.5">
+                                        Only the assigned team member can update status.
+                                    </p>
+                                )}
+                            </Field>
+                            <Field label="Priority" id="dr_priority">
+                                {canEditPriority ? (
+                                    <Select
+                                        id="dr_priority"
+                                        value={drPriority}
+                                        onChange={(e) => setDrPriority(e.target.value)}
+                                    >
+                                        {PRIORITY_OPTIONS.map((p) => (
+                                            <option key={p.value} value={p.value}>
+                                                {p.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                ) : (
+                                    <div className="h-10 flex items-center">
+                                        <StatusPill tone={toneFor(drPriority)}>
+                                            {titleCase(drPriority)}
+                                        </StatusPill>
+                                    </div>
+                                )}
+                            </Field>
+                            <div>
+                                <span className="span-label-style">Assigned To</span>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <Avatar
+                                        firstName={selectedTask.assigned_first_name}
+                                        lastName={selectedTask.assigned_last_name}
+                                        size="xs"
+                                    />
+                                    <span className="text-sm text-gray-900 truncate">
+                                        {selectedTask.assigned_first_name}{' '}
+                                        {selectedTask.assigned_last_name}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Due Date</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDate(selectedTask.due_date)}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Created</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDateTime(selectedTask.created_at)}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
-            </Modal>
-        </>
+            </Drawer>
+
+            {error && (
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
+            )}
+            {success && (
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
+            )}
+        </div>
     );
 };
 

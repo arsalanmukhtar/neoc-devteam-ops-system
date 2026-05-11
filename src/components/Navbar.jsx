@@ -12,10 +12,10 @@ const Navbar = ({ isAuthenticated, onLogout }) => (
                     className="h-10 w-10 object-contain"
                 />
                 <div className="flex flex-col leading-tight">
-                    <span className="text-lg font-semibold text-gray-900 tracking-tight">
+                    <span className="text-2xl font-semibold text-gray-900 tracking-tight">
                         NEOC TMS
                     </span>
-                    <span className="text-[13px] text-gray-500 mt-0.5">
+                    <span className="text-sm text-gray-500 mt-0.5">
                         Tech-EW Task Management
                     </span>
                 </div>

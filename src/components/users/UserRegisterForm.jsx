@@ -1,27 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Select } from '@mantine/core';
-import NotificationAlert from "../NotificationAlert";
+import NotificationAlert from '../NotificationAlert';
+import Button from '../ui/Button';
+import Field, { Input, Select } from '../ui/Field';
 
-// const baseURL = 'http://localhost:3000';
+const ROLE_OPTIONS = [
+    { value: '1', label: 'Administrator' },
+    { value: '2', label: 'Project Manager' },
+    { value: '3', label: 'Team Member' },
+];
+
+const STATUS_OPTIONS = [
+    { value: 'true', label: 'Active' },
+    { value: 'false', label: 'Inactive' },
+];
+
+const emptyForm = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    role_id: '',
+    is_active: '',
+};
 
 const UserRegisterForm = ({ api, onRegistered }) => {
-    const [form, setForm] = useState({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        role_id: '',
-        is_active: ''
-    });
+    const [form, setForm] = useState(emptyForm);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const handleChange = e => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+    const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
@@ -29,141 +39,143 @@ const UserRegisterForm = ({ api, onRegistered }) => {
             const res = await fetch(api, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form)
+                body: JSON.stringify(form),
             });
             const data = await res.json();
             if (res.ok) {
                 if (onRegistered) onRegistered(data);
-                setForm({
-                    first_name: '',
-                    last_name: '',
-                    email: '',
-                    password: '',
-                    role_id: '',
-                    is_active: ''
-                });
-                setSuccess('User registered successfully!');
+                setForm(emptyForm);
+                setSuccess('User registered successfully.');
             } else {
-                setError(data.error || 'Registration failed');
+                setError(data.error || 'Registration failed.');
             }
         } catch {
-            setError('Network error');
+            setError('Network error.');
         }
         setLoading(false);
     };
 
     useEffect(() => {
         if (success || error) {
-            const timer = setTimeout(() => {
+            const t = setTimeout(() => {
                 setSuccess('');
                 setError('');
             }, 3000);
-            return () => clearTimeout(timer);
+            return () => clearTimeout(t);
         }
     }, [success, error]);
 
     return (
-        <form className="w-full max-w-2xl mx-auto flex flex-col gap-6" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="first_name" className="label-style">First Name</label>
-                    <input type="text" id="first_name" name="first_name" className="input-border" required value={form.first_name} onChange={handleChange} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="last_name" className="label-style">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" className="input-border" required value={form.last_name} onChange={handleChange} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="email" className="label-style">Email</label>
-                    <input type="email" id="email" name="email" className="input-border" required value={form.email} onChange={handleChange} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="password" className="label-style">Password</label>
-                    <input type="password" id="password" name="password" className="input-border" required value={form.password} onChange={handleChange} />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="role_id" className="label-style">Role</label>
+        <form
+            className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-5"
+            onSubmit={handleSubmit}
+        >
+            <div>
+                <h2 className="text-base font-semibold text-gray-900 tracking-tight">
+                    Register user
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                    Create a new account with a role and activation status.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="First name" id="first_name" required>
+                    <Input
+                        id="first_name"
+                        name="first_name"
+                        value={form.first_name}
+                        onChange={(e) => setField('first_name', e.target.value)}
+                        required
+                    />
+                </Field>
+                <Field label="Last name" id="last_name" required>
+                    <Input
+                        id="last_name"
+                        name="last_name"
+                        value={form.last_name}
+                        onChange={(e) => setField('last_name', e.target.value)}
+                        required
+                    />
+                </Field>
+                <Field label="Email" id="email" required>
+                    <Input
+                        id="email"
+                        type="email"
+                        name="email"
+                        value={form.email}
+                        onChange={(e) => setField('email', e.target.value)}
+                        autoComplete="off"
+                        required
+                    />
+                </Field>
+                <Field label="Password" id="password" required>
+                    <Input
+                        id="password"
+                        type="password"
+                        name="password"
+                        value={form.password}
+                        onChange={(e) => setField('password', e.target.value)}
+                        autoComplete="new-password"
+                        required
+                    />
+                </Field>
+                <Field label="Role" id="role_id" required>
                     <Select
                         id="role_id"
-                        name="role_id"
-                        placeholder="Select Role"
-                        data={[
-                            { value: '1', label: 'Administrator' },
-                            { value: '2', label: 'Project Manager' },
-                            { value: '3', label: 'Team Member' },
-                        ]}
-                        radius="xl"
-                        size="md"
                         value={form.role_id}
-                        onChange={value => setForm({ ...form, role_id: value })}
-                        searchable
-                        classNames={{
-                            input: 'input-border sidebar-scroll font-sans',
-                            dropdown: 'font-sans',
-                            item: 'font-sans'
-                        }}
+                        onChange={(e) => setField('role_id', e.target.value)}
                         required
-                    />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="is_active" className="label-style">Active</label>
+                    >
+                        <option value="" disabled>
+                            Select a role
+                        </option>
+                        {ROLE_OPTIONS.map((r) => (
+                            <option key={r.value} value={r.value}>
+                                {r.label}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
+                <Field label="Status" id="is_active" required>
                     <Select
                         id="is_active"
-                        name="is_active"
-                        placeholder="Select Status"
-                        data={[
-                            { value: 'true', label: 'Active' },
-                            { value: 'false', label: 'Inactive' },
-                        ]}
-                        radius="xl"
-                        size="md"
                         value={form.is_active}
-                        onChange={value => setForm({ ...form, is_active: value })}
-                        searchable
-                        classNames={{
-                            input: 'input-border font-sans',
-                            dropdown: 'font-sans',
-                            item: 'font-sans'
-                        }}
+                        onChange={(e) => setField('is_active', e.target.value)}
                         required
-                    />
-                </div>
+                    >
+                        <option value="" disabled>
+                            Select status
+                        </option>
+                        {STATUS_OPTIONS.map((s) => (
+                            <option key={s.value} value={s.value}>
+                                {s.label}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
             </div>
-            {/* MESSAGES */}
-            {error && (
-                <NotificationAlert
-                    type="error"
-                    message={error}
-                    onClose={() => setError("")}
-                />
-            )}
-            {success && (
-                <NotificationAlert
-                    type="success"
-                    message={success}
-                    onClose={() => setSuccess("")}
-                />
-            )}
-            <div className="flex justify-end gap-4">
-                <button
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                <Button
                     type="button"
-                    className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
-                    onClick={() => setForm({
-                        first_name: '',
-                        last_name: '',
-                        email: '',
-                        password: '',
-                        role_id: '',
-                        is_active: ''
-                    })}
+                    variant="secondary"
+                    onClick={() => setForm(emptyForm)}
                     disabled={loading}
                 >
-                    Clear Form
-                </button>
-                <button type="submit" className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition" disabled={loading}>
-                    {loading ? "Registering..." : "Register User"}
-                </button>
+                    Clear
+                </Button>
+                <Button type="submit" loading={loading}>
+                    Register user
+                </Button>
             </div>
+
+            {error && (
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
+            )}
+            {success && (
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
+            )}
         </form>
     );
 };

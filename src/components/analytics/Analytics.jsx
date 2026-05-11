@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Bar, Pie, Line } from "react-chartjs-2";
+import React, { useState, useEffect, useCallback } from 'react';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -11,11 +11,12 @@ import {
     Title,
     Tooltip,
     Legend,
-    Filler
-} from "chart.js";
-import { BiExpand, BiCollapse } from "react-icons/bi";
+    Filler,
+} from 'chart.js';
+import { LuMaximize2, LuMinimize2, LuChartBar } from 'react-icons/lu';
+import Spinner from '../ui/Spinner';
+import EmptyState from '../ui/EmptyState';
 
-// Register ChartJS components
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -29,549 +30,396 @@ ChartJS.register(
     Filler
 );
 
-// Enhanced color palette for better visibility
-const COLORS = {
-    palette: [
-        "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4",
-        "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16", "#d946ef"
-    ]
+// Muted palette aligned with the rest of the app
+const PALETTE = [
+    '#6366f1', // indigo-500
+    '#10b981', // emerald-500
+    '#0ea5e9', // sky-500
+    '#f59e0b', // amber-500
+    '#f43f5e', // rose-500
+    '#8b5cf6', // violet-500
+    '#14b8a6', // teal-500
+    '#06b6d4', // cyan-500
+    '#f97316', // orange-500
+    '#d946ef', // fuchsia-500
+    '#84cc16', // lime-500
+    '#ec4899', // pink-500
+];
+
+const INTER = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+const FALLBACK_VALUE_KEYS = [
+    'value',
+    'count',
+    'hours',
+    'task_count',
+    'project_count',
+    'new_users',
+    'total_projects',
+    'active_task_count',
+    'pending_count',
+    'completed_tasks',
+    'total_assigned',
+    'completion_rate',
+    'high_priority_count',
+    'avg_hours_per_task',
+    'avg_hours_to_complete',
+    'urgent_requests_handled',
+    'tasks_assigned',
+    'request_count',
+    'low_priority_tasks',
+];
+
+const FALLBACK_LABEL_KEYS = [
+    'label',
+    'user_name',
+    'username',
+    'name',
+    'member_name',
+    'project_name',
+    'manager_name',
+    'task_title',
+    'date',
+    'status',
+    'priority',
+    'request_id',
+    'role_name',
+    'month',
+];
+
+const firstAvailable = (row, keys) => {
+    for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null) return row[k];
+    }
+    return null;
 };
 
 const Analytics = ({ activeTab }) => {
     const [chartsData, setChartsData] = useState({});
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState('');
     const [expandedChart, setExpandedChart] = useState(null);
 
     const apiEndpoints = {
         users: [
-            { key: "userCountByRole", endpoint: "/api/analytics/user-count-by-role", label: "User Count by Role", type: "bar", yLabel: "Role" },
-            { key: "activeInactiveUsers", endpoint: "/api/analytics/active-inactive-users", label: "Active vs Inactive Users", type: "pie", yLabel: "Status" },
-            { key: "usersCreatedPerMonth", endpoint: "/api/analytics/users-created-per-month", label: "Users Created per Month", type: "line", yLabel: "Month" }
+            { key: 'userCountByRole', endpoint: '/api/analytics/user-count-by-role', label: 'User Count by Role', type: 'bar' },
+            { key: 'activeInactiveUsers', endpoint: '/api/analytics/active-inactive-users', label: 'Active vs Inactive Users', type: 'pie' },
+            { key: 'usersCreatedPerMonth', endpoint: '/api/analytics/users-created-per-month', label: 'Users Created per Month', type: 'line' },
         ],
         projects: [
-            { key: "projectsByStatus", endpoint: "/api/analytics/projects-by-status", label: "Projects by Status", type: "pie" },
-            { key: "projectsPerManager", endpoint: "/api/analytics/projects-per-manager", label: "Projects per Manager", type: "bar" },
-            { key: "projectsCreatedPerMonth", endpoint: "/api/analytics/projects-created-per-month", label: "Projects Created per Month", type: "line" }
+            { key: 'projectsByStatus', endpoint: '/api/analytics/projects-by-status', label: 'Projects by Status', type: 'pie' },
+            { key: 'projectsPerManager', endpoint: '/api/analytics/projects-per-manager', label: 'Projects per Manager', type: 'bar' },
+            { key: 'projectsCreatedPerMonth', endpoint: '/api/analytics/projects-created-per-month', label: 'Projects Created per Month', type: 'line' },
         ],
         tasks: [
-            { key: "taskDistributionByStatus", endpoint: "/api/analytics/task-distribution-by-status", label: "Task Distribution by Status", type: "pie" },
-            { key: "taskDistributionByPriority", endpoint: "/api/analytics/task-distribution-by-priority", label: "Task Distribution by Priority", type: "pie" },
-            { key: "tasksAssignedToUsers", endpoint: "/api/analytics/tasks-assigned-to-users", label: "Tasks Assigned to Users", type: "bar" },
-            { key: "tasksPerProject", endpoint: "/api/analytics/tasks-per-project", label: "Tasks per Project", type: "bar" }
+            { key: 'taskDistributionByStatus', endpoint: '/api/analytics/task-distribution-by-status', label: 'Task Distribution by Status', type: 'pie' },
+            { key: 'taskDistributionByPriority', endpoint: '/api/analytics/task-distribution-by-priority', label: 'Task Distribution by Priority', type: 'pie' },
+            { key: 'tasksAssignedToUsers', endpoint: '/api/analytics/tasks-assigned-to-users', label: 'Tasks Assigned to Users', type: 'bar' },
+            { key: 'tasksPerProject', endpoint: '/api/analytics/tasks-per-project', label: 'Tasks per Project', type: 'bar' },
         ],
-        time_entries: [
-            { key: "hoursLoggedPerUser", endpoint: "/api/analytics/hours-logged-per-user", label: "Hours Logged per User", type: "bar" },
-            { key: "hoursLoggedPerProject", endpoint: "/api/analytics/hours-logged-per-project", label: "Hours Logged per Project", type: "bar" },
-            { key: "timeSpentPerTask", endpoint: "/api/analytics/time-spent-per-task", label: "Time Spent per Task", type: "bar" },
-            { key: "dailyActivityTrend", endpoint: "/api/analytics/daily-activity-trend", label: "Daily Activity Trend", type: "line" }
+        'time-entries': [
+            { key: 'hoursLoggedPerUser', endpoint: '/api/analytics/hours-logged-per-user', label: 'Hours Logged per User', type: 'bar' },
+            { key: 'hoursLoggedPerProject', endpoint: '/api/analytics/hours-logged-per-project', label: 'Hours Logged per Project', type: 'bar' },
+            { key: 'timeSpentPerTask', endpoint: '/api/analytics/time-spent-per-task', label: 'Time Spent per Task', type: 'bar' },
+            { key: 'dailyActivityTrend', endpoint: '/api/analytics/daily-activity-trend', label: 'Daily Activity Trend', type: 'line' },
         ],
         requests: [
-            { key: "requestsCountByStatus", endpoint: "/api/analytics/requests-count-by-status", label: "Requests by Status", type: "pie" },
-            { key: "requestsPerUser", endpoint: "/api/analytics/requests-per-user", label: "Requests per User", type: "bar" },
-            { key: "requestProcessingTime", endpoint: "/api/analytics/request-processing-time", label: "Request Processing Time", type: "bar" },
-            { key: "dailyRequestsOverTime", endpoint: "/api/analytics/daily-requests-over-time", label: "Daily Requests Over Time", type: "line" }
+            { key: 'requestsCountByStatus', endpoint: '/api/analytics/requests-count-by-status', label: 'Requests by Status', type: 'pie' },
+            { key: 'requestsPerUser', endpoint: '/api/analytics/requests-per-user', label: 'Requests per User', type: 'bar' },
+            { key: 'requestProcessingTime', endpoint: '/api/analytics/request-processing-time', label: 'Request Processing Time', type: 'bar' },
+            { key: 'dailyRequestsOverTime', endpoint: '/api/analytics/daily-requests-over-time', label: 'Daily Requests Over Time', type: 'line' },
         ],
-        "user-utilization": [
-            { key: "underUtilizedMembers", endpoint: "/api/analytics/under-utilized-members", label: "Under-Utilized Members", type: "bar" },
-            { key: "overUtilizedMembers", endpoint: "/api/analytics/over-utilized-members", label: "Over-Utilized Members", type: "bar" },
-            { key: "neglectedTasksMembers", endpoint: "/api/analytics/neglected-tasks-members", label: "Neglected Tasks Members", type: "bar" },
-            { key: "mostlyLowPriorityMembers", endpoint: "/api/analytics/mostly-low-priority-members", label: "Mostly Low-Priority Members", type: "bar" },
-            { key: "urgentTaskCandidates", endpoint: "/api/analytics/urgent-task-candidates", label: "Urgent Task Candidates", type: "bar" },
-            { key: "highestCompletionRateMembers", endpoint: "/api/analytics/highest-completion-rate-members", label: "Highest Completion Rate", type: "bar" },
-            { key: "idleUsers", endpoint: "/api/analytics/idle-users", label: "Idle Users", type: "bar" },
-            { key: "tooManyHighPriorityMembers", endpoint: "/api/analytics/too-many-high-priority-members", label: "Too Many High-Priority", type: "bar" },
-            { key: "avgHoursPerTask", endpoint: "/api/analytics/avg-hours-per-task", label: "Avg Hours per Task", type: "bar" },
-            { key: "delayingRequestsMembers", endpoint: "/api/analytics/delaying-requests-members", label: "Delaying Requests Members", type: "bar" },
-            { key: "urgentRequestsHandledMembers", endpoint: "/api/analytics/urgent-requests-handled-members", label: "Urgent Requests Handled", type: "bar" },
-            { key: "workloadHeatmap", endpoint: "/api/analytics/workload-heatmap", label: "Workload Heatmap", type: "bar" }
-        ]
+        'user-utilization': [
+            { key: 'underUtilizedMembers', endpoint: '/api/analytics/under-utilized-members', label: 'Under-Utilized Members', type: 'bar' },
+            { key: 'overUtilizedMembers', endpoint: '/api/analytics/over-utilized-members', label: 'Over-Utilized Members', type: 'bar' },
+            { key: 'neglectedTasksMembers', endpoint: '/api/analytics/neglected-tasks-members', label: 'Neglected Tasks', type: 'bar' },
+            { key: 'mostlyLowPriorityMembers', endpoint: '/api/analytics/mostly-low-priority-members', label: 'Mostly Low-Priority', type: 'bar' },
+            { key: 'urgentTaskCandidates', endpoint: '/api/analytics/urgent-task-candidates', label: 'Urgent Task Candidates', type: 'bar' },
+            { key: 'highestCompletionRateMembers', endpoint: '/api/analytics/highest-completion-rate-members', label: 'Highest Completion Rate', type: 'bar' },
+            { key: 'idleUsers', endpoint: '/api/analytics/idle-users', label: 'Idle Users', type: 'bar' },
+            { key: 'tooManyHighPriorityMembers', endpoint: '/api/analytics/too-many-high-priority-members', label: 'Too Many High-Priority', type: 'bar' },
+            { key: 'avgHoursPerTask', endpoint: '/api/analytics/avg-hours-per-task', label: 'Avg Hours per Task', type: 'bar' },
+            { key: 'delayingRequestsMembers', endpoint: '/api/analytics/delaying-requests-members', label: 'Delaying Requests', type: 'bar' },
+            { key: 'urgentRequestsHandledMembers', endpoint: '/api/analytics/urgent-requests-handled-members', label: 'Urgent Requests Handled', type: 'bar' },
+            { key: 'workloadHeatmap', endpoint: '/api/analytics/workload-heatmap', label: 'Workload Heatmap', type: 'bar' },
+        ],
     };
+
+    const transformRows = (rows, key) => {
+        if (!Array.isArray(rows)) return [];
+
+        // Special case: active/inactive comes as a single row with two columns
+        if (key === 'activeInactiveUsers' && rows.length === 1) {
+            const row = rows[0];
+            return [
+                { label: 'Active', value: row.active },
+                { label: 'Inactive', value: row.inactive },
+            ];
+        }
+
+        return rows
+            .map((row) => ({
+                label: firstAvailable(row, FALLBACK_LABEL_KEYS),
+                value: firstAvailable(row, FALLBACK_VALUE_KEYS),
+            }))
+            .filter((r) => r.label !== null && r.value !== null && r.value !== undefined);
+    };
+
+    const fetchAllCharts = useCallback(async () => {
+        setLoading(true);
+        setError('');
+        const token = localStorage.getItem('token');
+        const endpoints = apiEndpoints[activeTab] || [];
+        const next = {};
+
+        await Promise.all(
+            endpoints.map(async (chart) => {
+                try {
+                    const res = await fetch(chart.endpoint, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        next[chart.key] = transformRows(data, chart.key);
+                    } else {
+                        next[chart.key] = [];
+                    }
+                } catch {
+                    next[chart.key] = [];
+                }
+            })
+        );
+
+        setChartsData(next);
+        setLoading(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
 
     useEffect(() => {
         setExpandedChart(null);
         fetchAllCharts();
-    }, [activeTab]);
+    }, [activeTab, fetchAllCharts]);
 
-    const fetchAllCharts = async () => {
-        setLoading(true);
-        setError("");
-        const token = localStorage.getItem("token");
-        const endpoints = apiEndpoints[activeTab] || [];
-        const newChartsData = {};
+    const baseChartOptions = (type) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    font: { size: 12, weight: 500, family: INTER },
+                    color: '#374151',
+                    usePointStyle: true,
+                    pointStyle: 'circle',
+                    padding: 16,
+                    boxWidth: 8,
+                    boxHeight: 8,
+                },
+            },
+            tooltip: {
+                backgroundColor: '#111827',
+                titleColor: '#fff',
+                bodyColor: '#e5e7eb',
+                borderColor: 'transparent',
+                padding: 10,
+                cornerRadius: 6,
+                titleFont: { size: 12, weight: 600, family: INTER },
+                bodyFont: { size: 12, weight: 400, family: INTER },
+                displayColors: true,
+                boxPadding: 4,
+                caretSize: 6,
+            },
+        },
+        scales:
+            type !== 'pie'
+                ? {
+                      x: {
+                          ticks: {
+                              font: { size: 11, weight: 500, family: INTER },
+                              color: '#6b7280',
+                              maxRotation: 35,
+                              minRotation: 0,
+                              padding: 6,
+                          },
+                          grid: { display: false },
+                          border: { color: '#e5e7eb' },
+                      },
+                      y: {
+                          min: 0,
+                          ticks: {
+                              font: { size: 11, weight: 500, family: INTER },
+                              color: '#6b7280',
+                              padding: 6,
+                          },
+                          grid: { color: '#f3f4f6', drawTicks: false },
+                          border: { display: false },
+                      },
+                  }
+                : undefined,
+    });
 
-        for (const chart of endpoints) {
-            try {
-                const res = await fetch(`http://localhost:3000${chart.endpoint}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-
-                    // Custom transformation for each chart key
-                    switch (chart.key) {
-                        case "activeInactiveUsers":
-                            if (Array.isArray(data) && data.length === 1) {
-                                const row = data[0];
-                                newChartsData[chart.key] = [
-                                    { label: "Active", value: row.active },
-                                    { label: "Inactive", value: row.inactive }
-                                ];
-                            } else {
-                                newChartsData[chart.key] = Array.isArray(data) ? data : [];
-                            }
-                            break;
-                        case "userCountByRole":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.role_name,
-                                    value: row.user_count
-                                }))
-                                : [];
-                            break;
-                        case "usersCreatedPerMonth":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.month,
-                                    value: row.new_users
-                                }))
-                                : [];
-                            break;
-                        case "projectsByStatus":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.status,
-                                    value: row.project_count
-                                }))
-                                : [];
-                            break;
-                        case "projectsPerManager":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.manager_name,
-                                    value: row.project_count
-                                }))
-                                : [];
-                            break;
-                        case "projectsCreatedPerMonth":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.month,
-                                    value: row.total_projects
-                                }))
-                                : [];
-                            break;
-                        case "taskDistributionByStatus":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.status,
-                                    value: row.count
-                                }))
-                                : [];
-                            break;
-                        case "taskDistributionByPriority":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.priority,
-                                    value: row.count
-                                }))
-                                : [];
-                            break;
-                        case "tasksAssignedToUsers":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.user_name,
-                                    value: row.task_count
-                                }))
-                                : [];
-                            break;
-                        case "tasksPerProject":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.project_name,
-                                    value: row.task_count
-                                }))
-                                : [];
-                            break;
-                        case "hoursLoggedPerUser":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.user_name,
-                                    value: row.hours
-                                }))
-                                : [];
-                            break;
-                        case "hoursLoggedPerProject":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.project_name,
-                                    value: row.hours
-                                }))
-                                : [];
-                            break;
-                        case "timeSpentPerTask":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.task_title,
-                                    value: row.hours
-                                }))
-                                : [];
-                            break;
-                        case "dailyActivityTrend":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.date,
-                                    value: row.hours
-                                }))
-                                : [];
-                            break;
-                        case "requestsCountByStatus":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.status,
-                                    value: row.count
-                                }))
-                                : [];
-                            break;
-                        case "requestsPerUser":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.user_name,
-                                    value: row.count
-                                }))
-                                : [];
-                            break;
-                        case "requestProcessingTime":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.request_id,
-                                    value: row.hours
-                                }))
-                                : [];
-                            break;
-                        case "dailyRequestsOverTime":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.date,
-                                    value: row.count
-                                }))
-                                : [];
-                            break;
-                        // User Utilization keys
-                        case "underUtilizedMembers":
-                        case "overUtilizedMembers":
-                        case "neglectedTasksMembers":
-                        case "mostlyLowPriorityMembers":
-                        case "urgentTaskCandidates":
-                        case "highestCompletionRateMembers":
-                        case "idleUsers":
-                        case "tooManyHighPriorityMembers":
-                        case "avgHoursPerTask":
-                        case "delayingRequestsMembers":
-                        case "urgentRequestsHandledMembers":
-                        case "workloadHeatmap":
-                            newChartsData[chart.key] = Array.isArray(data)
-                                ? data.map(row => ({
-                                    label: row.user_name || row.label || row.name || row.member_name || row.project_name || row.task_title || row.date || row.status || row.priority || row.request_id,
-                                    value: row.value || row.count || row.hours || row.task_count || row.project_count || row.new_users || row.total_projects
-                                }))
-                                : [];
-                            break;
-                        default:
-                            newChartsData[chart.key] = Array.isArray(data) ? data : [];
-                            break;
-                    }
-                } else {
-                    newChartsData[chart.key] = [];
-                }
-            } catch (err) {
-                console.error(`Error fetching ${chart.key}:`, err);
-                newChartsData[chart.key] = [];
-            }
-        }
-
-        setChartsData(newChartsData);
-        setLoading(false);
-    };
-
-    const prepareBarChartData = (data, yLabel) => {
-        if (!data || data.length === 0) return null;
-        const labels = data.map(item => item.label);
-        const values = data.map(item => item.value);
-        return {
-            labels,
-            datasets: [
-                {
-                    label: yLabel,
-                    data: values,
-                    backgroundColor: COLORS.palette.map((color, idx) => idx < labels.length ? color : COLORS.palette[idx % COLORS.palette.length]),
-                    borderColor: COLORS.palette.map((color, idx) => idx < labels.length ? color : COLORS.palette[idx % COLORS.palette.length]),
-                    borderWidth: 2,
-                    borderRadius: 6,
-                    borderSkipped: false,
-                    hoverBackgroundColor: COLORS.palette.map((color, idx) =>
-                        idx < labels.length ? color : COLORS.palette[idx % COLORS.palette.length]
-                    ),
-                    hoverBorderWidth: 3
-                }
-            ]
-        };
-    };
-
-    const preparePieChartData = (data, yLabel) => {
-        if (!data || data.length === 0) return null;
-        const labels = data.map(item => item.label);
-        const values = data.map(item => item.value);
-        const total = values.reduce((sum, val) => sum + val, 0);
-        const percentages = values.map(val => ((val / total) * 100).toFixed(1));
-        return {
-            labels: labels.map((label, idx) => `${label} • ${percentages[idx]}%`),
-            datasets: [
-                {   
-                    label: yLabel,
-                    data: percentages,
-                    backgroundColor: COLORS.palette.slice(0, labels.length),
-                    borderColor: "#ffffff",
-                    borderWidth: 3,
-                    hoverBorderWidth: 4,
-                    hoverOffset: 8
-                }
-            ]
-        };
-    };
-
-    const prepareLineChartData = (data, yLabel) => {
-        if (!data || data.length === 0) return null;
-        const labels = data.map(item => item.label);
-        const values = data.map(item => item.value);
-        return {
-            labels,
-            datasets: [
-                {
-                    label: yLabel,
-                    data: values,
-                    borderColor: COLORS.palette[0],
-                    backgroundColor: `${COLORS.palette[0]}15`,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: COLORS.palette[0],
-                    pointBorderColor: "#ffffff",
-                    pointBorderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointHoverBorderWidth: 4
-                }
-            ]
-        };
-    };
-
-    const renderChart = (data, type, label, yLabel) => {
+    const renderChart = (data, type, label) => {
         if (!data || data.length === 0) {
             return (
                 <div className="w-full h-full flex items-center justify-center">
-                    <p className="text-gray-400 text-center text-lg font-medium">No data available</p>
+                    <p className="text-sm text-gray-400">No data available</p>
                 </div>
             );
         }
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: "bottom",
-                    labels: {
-                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold legend labels
-                        color: "#374151",
-                        usePointStyle: true,
-                        pointStyle: "circle",
-                        padding: 20,
-                        boxWidth: 18,
-                        boxHeight: 18,
-                    }
-                },
-                tooltip: {
-                    backgroundColor: "#222", // Tooltip background
-                    titleColor: "#fff",      // Title text color
-                    bodyColor: "#e0e7ef",    // Body text color
-                    borderColor: "#6366f1",  // Border color
-                    borderWidth: 2,          // Border width
-                    padding: 16,             // Padding inside tooltip
-                    cornerRadius: 8,         // Rounded corners
-                    titleFont: { size: 15, weight: 700, family: "'Poppins', sans-serif" },
-                    bodyFont: { size: 13, family: "'Poppins', sans-serif" },
-                    displayColors: true,     // Show color box for dataset
-                    boxPadding: 8,           // Padding around color box
-                    caretSize: 8,            // Size of caret/arrow
-                },
-            },
-            scales: type !== "pie" ? {
-                x: {
-                    offset: true,
-                    ticks: {
-                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold x axis labels
-                        color: "#374151",
-                        maxRotation: 45,
-                        minRotation: 0,
-                        padding: 16,
-                        align: "center",
-                    },
-                    grid: {
-                        color: (ctx) => ctx.index === 0 ? "#f3f4f6" : "#fafafa", // very light gray for primary, lighter for secondary
-                        borderColor: "#d1d5db", // softer gray for axis border
-                        drawBorder: true,
-                        lineWidth: (ctx) => ctx.index === 0 ? 2 : 1,
-                        drawOnChartArea: true,
-                        drawTicks: false
-                    },
-                    border: {
-                        display: true,
-                        color: "#d1d5db", // softer gray
-                        width: 2
-                    }
-                },
-                y: {
-                    min: 0,
-                    title: {
-                        display: true,
-                        text: "Count", // <-- This will show "Count" as the y-axis title
-                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" },
-                        color: "#374151",
-                        padding: { bottom: 10 }
-                    },
-                    ticks: {
-                        font: { size: 13, weight: 700, family: "'Poppins', sans-serif" }, // bold y axis labels
-                        color: "#374151",
-                        padding: 8
-                    },
-                    grid: {
-                        color: (ctx) => ctx.index === 0 ? "#f3f4f6" : "#fafafa",
-                        borderColor: "#d1d5db",
-                        drawBorder: true,
-                        lineWidth: (ctx) => ctx.index === 0 ? 2 : 1,
-                        drawOnChartArea: true,
-                        drawTicks: false
-                    },
-                    border: {
-                        display: true,
-                        color: "#d1d5db",
-                        width: 2
-                    }
-                }
-            } : undefined
-        };
 
-        if (type === "bar") {
-            const chartData = prepareBarChartData(data, yLabel);
-            return chartData ? (
-                <Bar data={chartData} options={chartOptions} />
-            ) : null;
+        const labels = data.map((d) => d.label);
+        const values = data.map((d) => Number(d.value) || 0);
+
+        if (type === 'bar') {
+            const chartData = {
+                labels,
+                datasets: [
+                    {
+                        label,
+                        data: values,
+                        backgroundColor: values.map((_, i) => PALETTE[i % PALETTE.length]),
+                        borderRadius: 4,
+                        borderSkipped: false,
+                        maxBarThickness: 36,
+                    },
+                ],
+            };
+            return <Bar data={chartData} options={baseChartOptions('bar')} />;
         }
-        if (type === "pie") {
-            const chartData = preparePieChartData(data, yLabel);
-            return chartData ? <Pie data={chartData} options={chartOptions} /> : null;
+        if (type === 'pie') {
+            const total = values.reduce((a, b) => a + b, 0) || 1;
+            const percentages = values.map((v) => ((v / total) * 100).toFixed(1));
+            const chartData = {
+                labels: labels.map((l, i) => `${l} · ${percentages[i]}%`),
+                datasets: [
+                    {
+                        label,
+                        data: values,
+                        backgroundColor: values.map((_, i) => PALETTE[i % PALETTE.length]),
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverOffset: 6,
+                    },
+                ],
+            };
+            return <Pie data={chartData} options={baseChartOptions('pie')} />;
         }
-        if (type === "line") {
-            const chartData = prepareLineChartData(data, yLabel);
-            return chartData ? <Line data={chartData} options={chartOptions} /> : null;
+        if (type === 'line') {
+            const chartData = {
+                labels,
+                datasets: [
+                    {
+                        label,
+                        data: values,
+                        borderColor: PALETTE[0],
+                        backgroundColor: `${PALETTE[0]}1a`,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: PALETTE[0],
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                    },
+                ],
+            };
+            return <Line data={chartData} options={baseChartOptions('line')} />;
         }
         return null;
     };
 
-    const getGridLayout = () => {
-        if (activeTab === "users") {
-            return {
-                cols: "grid-cols-4",
-                rows: "grid-rows-2",
-                items: [
-                    { key: "userCountByRole", span: "col-span-2 row-span-2", h: "" },
-                    { key: "activeInactiveUsers", span: "col-span-2 row-span-1", h: "" },
-                    { key: "usersCreatedPerMonth", span: "col-span-2 row-span-1", h: "" }
-                ]
-            };
-        }
-        const endpoints = apiEndpoints[activeTab] || [];
-        return {
-            cols: "grid-cols-3",
-            rows: "",
-            items: endpoints.map(ep => ({ key: ep.key, span: "col-span-1", h: "" }))
-        };
-    };
-
-    const layout = getGridLayout();
     const endpoints = apiEndpoints[activeTab] || [];
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+                <Spinner size={16} />
+                <span className="text-sm">Loading analytics…</span>
+            </div>
+        );
+    }
+
+    if (endpoints.length === 0) {
+        return (
+            <EmptyState
+                icon={LuChartBar}
+                title="Pick a category"
+                description="Select a category from the tabs above to view its analytics."
+            />
+        );
+    }
 
     if (expandedChart) {
         return (
-            <div className="w-full h-full bg-gray-50 p-4 overflow-y-auto flex flex-col">
-                <div className="flex justify-between items-center mb-4 flex-shrink-0 bg-white p-4 rounded-lg shadow-sm">
+            <div className="bg-white rounded-lg border border-gray-200 flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                     <div>
-                        <h3 className="text-2xl font-bold text-gray-800" style={{ fontFamily: "'Poppins', sans-serif" }}>{expandedChart.label}</h3>
-                        <p className="text-gray-500 text-sm mt-1" style={{ fontFamily: "'Poppins', sans-serif" }}>Expanded view</p>
+                        <h3 className="text-base font-semibold text-gray-900 tracking-tight">
+                            {expandedChart.label}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Expanded view</p>
                     </div>
                     <button
                         onClick={() => setExpandedChart(null)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition"
+                        className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                        title="Collapse"
                     >
-                        <BiCollapse size={28} className="text-gray-600" />
+                        <LuMinimize2 size={16} />
                     </button>
                 </div>
-                <div className="flex-1 min-h-0 bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                    {renderChart(chartsData[expandedChart.key], expandedChart.type, expandedChart.label)}
+                <div className="flex-1 min-h-0 p-6">
+                    {renderChart(
+                        chartsData[expandedChart.key],
+                        expandedChart.type,
+                        expandedChart.label
+                    )}
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full h-full bg-gray-50 p-4 overflow-y-auto flex flex-col">
+        <div>
             {error && (
-                <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500 mb-4 flex-shrink-0">
-                    <p className="text-red-700 font-semibold text-sm" style={{ fontFamily: "'Poppins', sans-serif" }}>{error}</p>
+                <div className="mb-4 px-3 py-2.5 rounded-md bg-rose-50 border border-rose-200 text-sm text-rose-900">
+                    {error}
                 </div>
             )}
-            {loading ? (
-                <div className="flex items-center justify-center flex-1">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                        <p className="text-gray-500 font-medium" style={{ fontFamily: "'Poppins', sans-serif" }}>Loading analytics...</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {endpoints.map((endpoint) => (
+                    <div
+                        key={endpoint.key}
+                        className="group bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all flex flex-col"
+                        style={{ minHeight: '320px' }}
+                    >
+                        <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+                            <h4 className="text-sm font-semibold text-gray-900 tracking-tight pr-8">
+                                {endpoint.label}
+                            </h4>
+                            <button
+                                onClick={() => setExpandedChart(endpoint)}
+                                className="opacity-0 group-hover:opacity-100 -mt-1 -mr-1 p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                                title="Expand"
+                            >
+                                <LuMaximize2 size={14} />
+                            </button>
+                        </div>
+                        <div className="flex-1 min-h-0 p-4">
+                            {renderChart(
+                                chartsData[endpoint.key],
+                                endpoint.type,
+                                endpoint.label
+                            )}
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <div className={`grid ${layout.cols} ${layout.rows} gap-4 flex-1 min-h-0`}>
-                    {layout.items.map((item) => {
-                        const endpoint = endpoints.find(ep => ep.key === item.key);
-                        if (!endpoint) return null;
-                        return (
-                            <div key={endpoint.key} className={`${item.span} min-h-0 flex flex-col`}>
-                                <div className="h-full bg-white p-5 rounded-lg shadow-md border border-gray-200 relative group hover:shadow-lg transition-shadow flex flex-col">
-                                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition z-10">
-                                        <button
-                                            onClick={() => setExpandedChart(endpoint)}
-                                            className="p-2 hover:bg-blue-50 rounded-lg transition"
-                                            title="Expand chart"
-                                        >
-                                            <BiExpand size={22} className="text-blue-600" />
-                                        </button>
-                                    </div>
-                                    <div className="flex-shrink-0 mb-3 pr-10">
-                                        <h4 className="text-base font-semibold text-gray-800" style={{ fontFamily: "'Poppins', sans-serif" }}>{endpoint.label}</h4>
-                                        <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-2"></div>
-                                    </div>
-                                    <div className="flex-1 min-h-0 relative w-full">
-                                        {renderChart(chartsData[endpoint.key], endpoint.type, endpoint.label, endpoint.yLabel)}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                ))}
+            </div>
         </div>
     );
 };

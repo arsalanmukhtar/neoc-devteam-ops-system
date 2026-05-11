@@ -1,200 +1,188 @@
-import React, { useState, useEffect } from "react";
-import { Select, Modal } from "@mantine/core";
-import NotificationAlert from "../NotificationAlert";
+import React, { useState, useEffect, useMemo } from 'react';
+import { LuTriangleAlert } from 'react-icons/lu';
+import { formatDate } from '@src/utils/dateFormatter';
+import NotificationAlert from '../NotificationAlert';
+import Button from '../ui/Button';
+import Field, { Select } from '../ui/Field';
+import StatusPill from '../ui/StatusPill';
+import { toneFor } from '../ui/statusTone';
 
-// const baseURL = "http://localhost:3000";
+const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '').trim();
+};
 
-const ProjectDelete = ({ api = "/api/projects/delete" }) => {
+const statusLabel = (status) => {
+    if (!status) return '—';
+    const s = String(status).toLowerCase().replace('_', ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+const ProjectDelete = ({ api = '/api/projects/delete' }) => {
     const [projects, setProjects] = useState([]);
     const [selectedId, setSelectedId] = useState('');
-    const [selectedProject, setSelectedProject] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [modalOpened, setModalOpened] = useState(false);
 
-    // Fetch all projects for selection
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        fetch("/api/projects/list", {
+        const token = localStorage.getItem('token');
+        fetch('/api/projects/list', {
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
         })
-            .then((res) => res.json())
-            .then((data) => setProjects(Array.isArray(data) ? data : []));
+            .then((r) => r.json())
+            .then((d) => setProjects(Array.isArray(d) ? d : []))
+            .catch(() => {});
     }, []);
 
-    useEffect(() => {
-        if (success || error) {
-            const timer = setTimeout(() => {
-                setSuccess('');
-                setError('');
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [success, error]);
+    const selectedProject = useMemo(
+        () => projects.find((p) => p.project_id === selectedId) || null,
+        [projects, selectedId]
+    );
 
-    useEffect(() => {
-        if (selectedId) {
-            const project = projects.find(p => p.project_id === selectedId);
-            setSelectedProject(project || null);
-            setModalOpened(!!project);
-        } else {
-            setSelectedProject(null);
-            setModalOpened(false);
-        }
-    }, [selectedId, projects]);
-
-    const handleDelete = async (e) => {
-        e.preventDefault();
+    const handleDelete = async () => {
         if (!selectedId) return;
         setLoading(true);
         setError('');
         setSuccess('');
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem('token');
         try {
             const res = await fetch(`${api}/${selectedId}`, {
-                method: "DELETE",
+                method: 'DELETE',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
             });
             const data = await res.json();
             if (res.ok) {
-                setSuccess("Project deleted successfully!");
-                setProjects(projects.filter(p => p.project_id !== selectedId));
+                setSuccess('Project deleted successfully.');
+                setProjects((prev) => prev.filter((p) => p.project_id !== selectedId));
                 setSelectedId('');
-                setModalOpened(false);
             } else {
-                setError(data.error || "Delete failed");
+                setError(data.error || 'Delete failed.');
             }
         } catch {
-            setError("Network error");
+            setError('Network error.');
         }
         setLoading(false);
     };
 
     return (
-        <div className="w-full flex flex-col items-center font-sans">
-            <div className="mb-4 w-full max-w-2xl">
-                <label htmlFor="projectDeleteSelect" className="block font-medium text-stone-700 mb-2 text-center">Select Project to Delete</label>
-                <Select
-                    id="projectDeleteSelect"
-                    name="projectDeleteSelect"
-                    placeholder="Choose a project"
-                    data={
-                        projects.map(project => ({
-                            value: project.project_id,
-                            label: project.name
-                        }))
-                    }
-                    radius="xl"
-                    size="md"
-                    value={selectedId}
-                    onChange={value => setSelectedId(value)}
-                    searchable
-                    classNames={{
-                        input: 'input-border font-sans',
-                        dropdown: 'font-sans',
-                        item: 'font-sans'
-                    }}
-                    styles={{
-                        input: { width: '100%' }
-                    }}
-                    required
-                />
+        <div className="max-w-2xl mx-auto space-y-5">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <Field label="Select project to delete" id="projectDeleteSelect" required>
+                    <Select
+                        id="projectDeleteSelect"
+                        value={selectedId}
+                        onChange={(e) => setSelectedId(e.target.value)}
+                    >
+                        <option value="">Choose a project…</option>
+                        {projects.map((p) => (
+                            <option key={p.project_id} value={p.project_id}>
+                                {p.name}
+                            </option>
+                        ))}
+                    </Select>
+                </Field>
             </div>
-            <Modal
-                opened={modalOpened}
-                onClose={() => setModalOpened(false)}
-                title={
-                    <div className="text-lg font-bold text-red-500 flex items-center gap-2">
-                        <span className='text-stone-700 text-2xl'>Delete Project</span>
+
+            {selectedProject && (
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 flex items-start gap-3 bg-rose-50">
+                        <LuTriangleAlert
+                            size={18}
+                            className="text-rose-600 mt-0.5 flex-shrink-0"
+                        />
+                        <div>
+                            <h3 className="text-sm font-semibold text-rose-900">
+                                Permanently delete this project?
+                            </h3>
+                            <p className="text-xs text-rose-700 mt-0.5">
+                                All associated tasks and time entries will be deleted as well. This
+                                action cannot be undone.
+                            </p>
+                        </div>
                     </div>
-                }
-                centered
-                size="lg"
-                overlayProps={{ blur: 4 }}
-            >
-                {selectedProject && (
-                    <div className="p-4 bg-white rounded-lg shadow space-y-6">
-                        {/* Project Name */}
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Project Name</span>
-                            <span className="text-lg font-bold text-blue-400">{selectedProject.name}</span>
+
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <span className="span-label-style">Project</span>
+                            <h2 className="mt-1 text-base font-semibold text-gray-900">
+                                {selectedProject.name}
+                            </h2>
                         </div>
-                        {/* Description */}
-                        <div className="sidebar-scroll flex flex-col h-96 overflow-y-auto">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Description</span>
-                            <div
-                                className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
-                                dangerouslySetInnerHTML={{ __html: selectedProject.description }}
-                            />
+
+                        <div>
+                            <span className="span-label-style">Description</span>
+                            <p className="mt-1.5 text-sm text-gray-600 line-clamp-3">
+                                {stripHtml(selectedProject.description) || 'No description.'}
+                            </p>
                         </div>
-                        {/* Manager */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Manager</span>
-                                <span className="text-base text-gray-700">{selectedProject.manager_first_name} {selectedProject.manager_last_name}</span>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <span className="span-label-style">Manager</span>
+                                <div className="mt-1.5 text-sm text-gray-900">
+                                    {selectedProject.manager_first_name}{' '}
+                                    {selectedProject.manager_last_name}
+                                </div>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
-                                <span className={`text-base font-semibold ${selectedProject.status === 'active' ? 'text-green-600' : selectedProject.status === 'completed' ? 'text-blue-600' : 'text-red-500'}`}>
-                                    {selectedProject.status.charAt(0).toUpperCase() + selectedProject.status.slice(1)}
-                                </span>
+                            <div>
+                                <span className="span-label-style">Status</span>
+                                <div className="mt-1.5">
+                                    <StatusPill tone={toneFor(selectedProject.status)}>
+                                        {statusLabel(selectedProject.status)}
+                                    </StatusPill>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Start Date</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDate(selectedProject.start_date)}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Due Date</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDate(selectedProject.due_date)}
+                                </div>
                             </div>
                         </div>
-                        {/* Dates */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Date</span>
-                                <span className="text-base text-gray-700">{selectedProject.start_date}</span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
-                                <span className="text-base text-gray-700">{selectedProject.due_date}</span>
-                            </div>
+
+                        <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setSelectedId('')}
+                                disabled={loading}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="danger"
+                                onClick={handleDelete}
+                                loading={loading}
+                            >
+                                Delete project
+                            </Button>
                         </div>
-                        {/* Confirm Delete */}
-                        <form onSubmit={handleDelete}>
-                            {error && (
-                                <NotificationAlert
-                                    type="error"
-                                    message={error}
-                                    onClose={() => setError("")}
-                                />
-                            )}
-                            {success && (
-                                <NotificationAlert
-                                    type="success"
-                                    message={success}
-                                    onClose={() => setSuccess("")}
-                                />
-                            )}
-                            <div className="flex justify-end gap-4 mt-6">
-                                <button
-                                    type="button"
-                                    className="bg-gray-300 text-gray-700 font-semibold py-2 w-40 rounded-full hover:bg-gray-400 transition"
-                                    onClick={() => { setSelectedId(''); setModalOpened(false); }}
-                                    disabled={loading}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-red-500 text-white font-semibold py-2 w-40 rounded-full hover:bg-red-600 transition"
-                                    disabled={loading}
-                                >
-                                    {loading ? "Deleting..." : "Delete Project"}
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                )}
-            </Modal>
+                </div>
+            )}
+
+            {error && (
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
+            )}
+            {success && (
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
+            )}
         </div>
     );
 };

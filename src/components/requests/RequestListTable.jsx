@@ -1,470 +1,341 @@
-import React, { useEffect, useState } from "react";
-import { GoThumbsup, GoThumbsdown } from "react-icons/go";
-import { MdFeedback } from "react-icons/md";
-import { Modal, Button, Select } from "@mantine/core";
-import NotificationAlert from "../NotificationAlert";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Color from '@tiptap/extension-color';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Highlight from '@tiptap/extension-highlight';
+import React, { useEffect, useState, useMemo } from 'react';
+import { LuInbox, LuCheck, LuX, LuMessageSquare, LuClock } from 'react-icons/lu';
 import { formatDateTime } from '@src/utils/dateFormatter';
+import NotificationAlert from '../NotificationAlert';
+import StatusPill from '../ui/StatusPill';
+import { toneFor } from '../ui/statusTone';
+import Card from '../ui/Card';
+import Avatar from '../ui/Avatar';
+import Drawer from '../ui/Drawer';
+import EmptyState from '../ui/EmptyState';
+import Toolbar from '../ui/Toolbar';
+import Spinner from '../ui/Spinner';
+import Button from '../ui/Button';
+import RichTextEditor from '../ui/RichTextEditor';
 
-// const baseURL = "http://localhost:3000";
-
-const priorityOptions = [
-    { value: "low", label: "Low", color: "#60a5fa" },
-    { value: "medium", label: "Medium", color: "#eca900" },
-    { value: "high", label: "High", color: "#ef4444" },
-];
-
-const priorityColors = {
-    low: "#60a5fa",
-    medium: "#eca900",
-    high: "#ef4444",
+const titleCase = (s) => {
+    if (!s) return '';
+    return s.replace(/\b\w/g, (c) => c.toUpperCase());
 };
 
-// Helper to calculate duration in hours
 const getDurationHours = (start, end) => {
-    if (!start || !end) return "-";
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffMs = endDate - startDate;
-    if (isNaN(diffMs) || diffMs < 0) return "-";
-    return (diffMs / (1000 * 60 * 60)).toFixed(2);
+    if (!start || !end) return '0';
+    const ms = new Date(end) - new Date(start);
+    if (isNaN(ms) || ms < 0) return '0';
+    return (ms / (1000 * 60 * 60)).toFixed(2);
 };
-
-// Helper to pretty print notes (basic HTML rendering)
-const renderNotes = (notes) => {
-    if (!notes) return "-";
-    return <div dangerouslySetInnerHTML={{ __html: notes }} />;
-};
-
-// Custom item renderer for Mantine Select
-const PriorityItem = React.forwardRef(({ label, color, ...others }, ref) => (
-    <div ref={ref} {...others} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <span style={{
-            display: 'inline-block',
-            width: '12px',
-            height: '12px',
-            borderRadius: '50%',
-            background: color,
-            marginRight: '6px',
-            border: '1px solid #ccc'
-        }} />
-        <span style={{ color, fontWeight: 500 }}>{label}</span>
-    </div>
-));
 
 const RequestListTable = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertType, setAlertType] = useState("success");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [modalOpened, setModalOpened] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState(null);
-    const [modalPriority, setModalPriority] = useState("");
-    const [savePriorityLoading, setSavePriorityLoading] = useState(false);
-    const [feedbackModalOpened, setFeedbackModalOpened] = useState(false);
-    const [feedbackRequest, setFeedbackRequest] = useState(null);
-    const [feedbackNotes, setFeedbackNotes] = useState("");
-    const [feedbackLoading, setFeedbackLoading] = useState(false);
-    const [notesModalOpened, setNotesModalOpened] = useState(false);
-    const [notesModalContent, setNotesModalContent] = useState("");
+    const [search, setSearch] = useState('');
+    const [alert, setAlert] = useState(null); // { type, message }
 
+    const [active, setActive] = useState(null); // currently-viewing request
+    const [feedback, setFeedback] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
 
-    const feedbackEditor = useEditor({
-        extensions: [StarterKit, Color, TextStyle, Highlight],
-        content: feedbackNotes,
-        onUpdate: ({ editor }) => setFeedbackNotes(editor.getHTML()),
-    });
-
-    const handleOpenFeedbackModal = (request) => {
-        setFeedbackRequest(request);
-        setFeedbackNotes("");
-        setFeedbackModalOpened(true);
-        if (feedbackEditor) feedbackEditor.commands.setContent("");
-    };
-
-    const handleSendFeedback = async (approved) => {
-        if (!feedbackRequest) return;
-        setFeedbackLoading(true);
-        const token = localStorage.getItem("token");
+    const fetchRequests = async () => {
+        setLoading(true);
         try {
-            const res = await fetch(`/api/requests/time-entry/${feedbackRequest.request_id}/${approved ? "accept" : "reject"}`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    review_comment: feedbackNotes || (approved ? "Approved" : "Rejected")
-                })
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/requests/time-entry?status=pending', {
+                headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
             if (res.ok) {
-                showNotification("success", data.message || (approved ? "Request accepted!" : "Request rejected!"));
-                fetchRequests();
-                setFeedbackModalOpened(false);
-                setFeedbackRequest(null);
+                setRequests(Array.isArray(data) ? data : []);
             } else {
-                showNotification("error", data.error || "Failed to send feedback");
+                setAlert({ type: 'error', message: data.error || 'Failed to fetch requests.' });
             }
         } catch {
-            showNotification("error", "Network error");
+            setAlert({ type: 'error', message: 'Network error.' });
         }
-        setFeedbackLoading(false);
+        setLoading(false);
     };
 
     useEffect(() => {
         fetchRequests();
     }, []);
 
-    const fetchRequests = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`/api/requests/time-entry?status=pending`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setRequests(data);
-            } else {
-                setError(data.error || "Failed to fetch requests");
-            }
-        } catch {
-            setError("Network error");
-        }
-        setLoading(false);
+    const filtered = useMemo(() => {
+        if (!search.trim()) return requests;
+        const q = search.toLowerCase();
+        return requests.filter(
+            (r) =>
+                r.task_title?.toLowerCase().includes(q) ||
+                `${r.user_first_name} ${r.user_last_name}`.toLowerCase().includes(q)
+        );
+    }, [requests, search]);
+
+    const closeDrawer = () => {
+        setActive(null);
+        setFeedback('');
     };
 
-    const showNotification = (type, message) => {
-        setAlertType(type);
-        setAlertMessage(message);
-        setShowAlert(true);
-    };
-
-    const handleAccept = async (id) => {
-        setError("");
-        setSuccess("");
+    const submitDecision = async (request, approved, reviewComment) => {
+        setActionLoading(true);
+        const token = localStorage.getItem('token');
         try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`/api/requests/time-entry/${id}/accept`, {
-                method: "POST",
+            const endpoint = `/api/requests/time-entry/${request.request_id}/${
+                approved ? 'accept' : 'reject'
+            }`;
+            const res = await fetch(endpoint, {
+                method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    review_comment: "Approved"
-                })
+                    review_comment: reviewComment || (approved ? 'Approved' : 'Rejected'),
+                }),
             });
             const data = await res.json();
             if (res.ok) {
-                setSuccess(data.message || "Request accepted!");
-                showNotification("success", data.message || "Request accepted!");
+                setAlert({
+                    type: 'success',
+                    message: data.message || (approved ? 'Request accepted.' : 'Request rejected.'),
+                });
+                closeDrawer();
                 fetchRequests();
             } else {
-                setError(data.error || data.message || "Failed to accept request");
-                showNotification("error", data.error || data.message || "Failed to accept request");
+                setAlert({
+                    type: 'error',
+                    message: data.error || 'Failed to submit decision.',
+                });
             }
         } catch {
-            setError("Network error");
-            showNotification("error", "Network error");
+            setAlert({ type: 'error', message: 'Network error.' });
         }
+        setActionLoading(false);
     };
 
-    const handleReject = async (id) => {
-        setError("");
-        setSuccess("");
-        try {
-            const token = localStorage.getItem("token");
-            const res = await fetch(`/api/requests/time-entry/${id}/reject`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ review_comment: "Rejected" })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setSuccess(data.message || "Request rejected!");
-                showNotification("success", data.message || "Request rejected!");
-                fetchRequests();
-            } else {
-                setError(data.error || data.message || "Failed to reject request");
-                showNotification("error", data.error || data.message || "Failed to reject request");
-            }
-        } catch {
-            setError("Network error");
-            showNotification("error", "Network error");
-        }
-    };
-
-    const handleOpenPriorityModal = (request) => {
-        setSelectedRequest(request);
-        setModalPriority(request.priority || "low");
-        setModalOpened(true);
-    };
-
-    const handleSavePriority = async () => {
-        if (!selectedRequest) return;
-        setSavePriorityLoading(true);
-        const token = localStorage.getItem("token");
-        try {
-            const res = await fetch(`/api/requests/time-entry/${selectedRequest.request_id}`, {
-                method: "PUT",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ priority: modalPriority })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showNotification("success", "Priority updated successfully!");
-                fetchRequests();
-                setModalOpened(false);
-                setSelectedRequest(null);
-            } else {
-                showNotification("error", data.error || "Failed to update priority");
-            }
-        } catch {
-            showNotification("error", "Network error");
-        }
-        setSavePriorityLoading(false);
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+                <Spinner size={16} />
+                <span className="text-sm">Loading requests…</span>
+            </div>
+        );
+    }
 
     return (
-        <>
-            <div className="p-4 bg-gray-50 rounded-lg shadow">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                        <thead className="bg-blue-200">
-                            <tr>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Task</th>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">User</th>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Start Time</th>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">End Time</th>
-                                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Duration (hrs)</th>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Priority</th>
-                                <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Notes</th>
-                                <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={8} className="text-center py-6 text-gray-400">Loading...</td>
-                                </tr>
-                            ) : requests.length === 0 ? (
-                                <tr>
-                                    <td colSpan={8} className="text-center py-6 text-gray-400">No pending requests.</td>
-                                </tr>
-                            ) : (
-                                requests.map((req) => (
-                                    <tr key={req.request_id}>
-                                        <td className="border-b text-xs px-3 py-2">{req.task_title}</td>
-                                        <td className="border-b text-xs px-3 py-2">{req.user_first_name} {req.user_last_name}</td>
-                                        <td className="border-b text-xs px-3 py-2">{formatDateTime(req.start_time)}</td>
-                                        <td className="border-b text-xs px-3 py-2">{formatDateTime(req.end_time)}</td>
-                                        <td className="border-b text-xs px-3 py-2 text-center font-semibold">{getDurationHours(req.start_time, req.end_time)}</td>
-                                        <td className="border-b text-xs px-3 py-2">
-                                            <button
-                                                onClick={() => handleOpenPriorityModal(req)}
-                                                className="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition"
-                                                style={{
-                                                    width: "140px",
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    background: '#f8fafc',
-                                                    border: 'none'
-                                                }}
-                                            >
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    borderRadius: '50%',
-                                                    background: priorityColors[req.priority?.toLowerCase()] || "#aaa",
-                                                    marginRight: '6px',
-                                                    border: '1px solid #ccc'
-                                                }} />
-                                                <span style={{
-                                                    color: priorityColors[req.priority?.toLowerCase()] || "#aaa",
-                                                    fontWeight: 500
-                                                }}>
-                                                    {req.priority ? req.priority.charAt(0).toUpperCase() + req.priority.slice(1) : 'Low'}
-                                                </span>
-                                                <span
-                                                    onClick={e => {
-                                                        e.stopPropagation();
-                                                        handleOpenFeedbackModal(req);
-                                                    }}
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        cursor: 'pointer',
-                                                        marginLeft: 'auto'
-                                                    }}
-                                                    title="Give Feedback"
-                                                >
-                                                    <MdFeedback size={18} color="#2563eb" />
-                                                </span>
-                                            </button>
-                                        </td>
-                                        <td
-                                            className="border-b px-3 py-2 text-xs"
-                                            style={{
-                                                maxWidth: "180px",
-                                                whiteSpace: "nowrap",
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                cursor: req.notes ? "pointer" : "default",
-                                                color: req.notes ? "#2563eb" : "#444",
-                                                fontWeight: req.notes ? 500 : 400,
-                                                transition: "color 0.2s, text-decoration 0.2s"
-                                            }}
-                                            title={req.notes ? "Click to view full notes" : ""}
-                                            onClick={() => {
-                                                if (req.notes) {
-                                                    setNotesModalContent(req.notes);
-                                                    setNotesModalOpened(true);
-                                                }
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    whiteSpace: "nowrap",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    maxWidth: "170px"
-                                                }}
-                                                dangerouslySetInnerHTML={{ __html: req.notes || "-" }}
-                                            />
-                                        </td>
-                                        <td className="border-b px-3 py-2 text-center">
-                                            <div className="flex flex-row items-center justify-center gap-4">
-                                                <button
-                                                    className="group bg-green-50 hover:bg-green-100 rounded-full p-2 shadow transition"
-                                                    title="Accept"
-                                                    onClick={() => handleAccept(req.request_id)}
-                                                >
-                                                    <GoThumbsup
-                                                        size={20}
-                                                        className="text-green-500 group-hover:text-green-700 transition"
-                                                    />
-                                                </button>
-                                                <button
-                                                    className="group bg-red-50 hover:bg-red-100 rounded-full p-2 shadow transition"
-                                                    title="Reject"
-                                                    onClick={() => handleReject(req.request_id)}
-                                                >
-                                                    <GoThumbsdown
-                                                        size={20}
-                                                        className="text-red-500 group-hover:text-red-700 transition"
-                                                    />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-                {showAlert && (
-                    <NotificationAlert
-                        type={alertType === "error" ? "error" : "success"}
-                        message={alertMessage}
-                        onClose={() => setShowAlert(false)}
-                    />
-                )}
+        <div>
+            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
+                    Pending Requests
+                </h2>
+                <Toolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    searchPlaceholder="Search by task or requester…"
+                    right={
+                        <span className="text-xs text-gray-500 tabular-nums">
+                            {filtered.length} pending
+                        </span>
+                    }
+                />
             </div>
 
-            {/* Feedback Modal */}
-            <Modal
-                opened={feedbackModalOpened}
-                onClose={() => setFeedbackModalOpened(false)}
-                title="Send Feedback to Creator"
-                centered
-                size="md"
-                overlayProps={{ blur: 4 }}
-            >
-                {feedbackRequest && (
-                    <div className="space-y-6">
-                        <div>
-                            <div className="text-sm font-semibold text-gray-700 mb-1">Task: {feedbackRequest.task_title}</div>
-                            <div className="text-xs text-gray-500 mb-2">User: {feedbackRequest.user_first_name} {feedbackRequest.user_last_name}</div>
-                        </div>
-                        <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-1">
-                                Feedback Notes
-                            </label>
+            {filtered.length === 0 ? (
+                <EmptyState
+                    icon={LuInbox}
+                    title={requests.length === 0 ? 'Inbox is empty' : 'No matches'}
+                    description={
+                        requests.length === 0
+                            ? "You're all caught up — no pending time-entry requests to review."
+                            : 'Try a different search term.'
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((req) => {
+                        const duration = getDurationHours(req.start_time, req.end_time);
+                        return (
+                            <Card
+                                key={req.request_id}
+                                onClick={() => {
+                                    setActive(req);
+                                    setFeedback('');
+                                }}
+                            >
+                                <div className="flex items-center justify-between mb-3 gap-2">
+                                    <StatusPill tone={toneFor(req.priority)}>
+                                        {titleCase(req.priority || 'low')}
+                                    </StatusPill>
+                                    <StatusPill tone="amber">Pending</StatusPill>
+                                </div>
+                                <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                                    {req.task_title}
+                                </h3>
+                                <div className="flex items-baseline gap-1.5 mb-3">
+                                    <span className="text-2xl font-semibold text-gray-900 tabular-nums">
+                                        {duration}
+                                    </span>
+                                    <span className="text-xs text-gray-500">hours</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-3 tabular-nums">
+                                    <LuClock size={11} className="text-gray-400" />
+                                    {formatDateTime(req.start_time)}
+                                </div>
+                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 mb-3">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <Avatar
+                                            firstName={req.user_first_name}
+                                            lastName={req.user_last_name}
+                                            size="xs"
+                                        />
+                                        <span className="text-xs text-gray-600 truncate">
+                                            {req.user_first_name} {req.user_last_name}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div
+                                    className="flex items-center gap-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        leftIcon={LuCheck}
+                                        className="flex-1"
+                                        onClick={() => submitDecision(req, true, 'Approved')}
+                                        disabled={actionLoading}
+                                    >
+                                        Accept
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        leftIcon={LuX}
+                                        onClick={() => submitDecision(req, false, 'Rejected')}
+                                        disabled={actionLoading}
+                                    >
+                                        Reject
+                                    </Button>
+                                </div>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
 
-                            <div className="border border-gray-300 rounded-lg p-2 bg-gray-50 mb-2">
-                                <EditorContent
-                                    editor={feedbackEditor}
-                                    className="
-                                    text-xs
-                                    tiptap
-                                    max-h-56
-                                    overflow-y-auto
-                                    sidebar-scroll
-                                "
-                                />
+            <Drawer
+                open={!!active}
+                onClose={closeDrawer}
+                title={active?.task_title}
+                subtitle={
+                    active
+                        ? `${active.user_first_name} ${active.user_last_name} · ${getDurationHours(
+                              active.start_time,
+                              active.end_time
+                          )} hours`
+                        : ''
+                }
+                width="lg"
+                footer={
+                    <>
+                        <Button
+                            variant="dangerGhost"
+                            leftIcon={LuX}
+                            onClick={() => submitDecision(active, false, feedback)}
+                            loading={actionLoading}
+                        >
+                            Reject
+                        </Button>
+                        <div className="flex-1" />
+                        <Button variant="secondary" onClick={closeDrawer} disabled={actionLoading}>
+                            Cancel
+                        </Button>
+                        <Button
+                            leftIcon={LuCheck}
+                            onClick={() => submitDecision(active, true, feedback)}
+                            loading={actionLoading}
+                        >
+                            Accept
+                        </Button>
+                    </>
+                }
+            >
+                {active && (
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <span className="span-label-style">Priority</span>
+                                <div className="mt-1.5">
+                                    <StatusPill tone={toneFor(active.priority)}>
+                                        {titleCase(active.priority || 'low')}
+                                    </StatusPill>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Requester</span>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <Avatar
+                                        firstName={active.user_first_name}
+                                        lastName={active.user_last_name}
+                                        size="xs"
+                                    />
+                                    <span className="text-sm text-gray-900 truncate">
+                                        {active.user_first_name} {active.user_last_name}
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Start Time</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDateTime(active.start_time)}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">End Time</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDateTime(active.end_time)}
+                                </div>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-4">
-                            <Button
-                                color="red"
-                                variant="outline"
-                                className="rounded-full hover:bg-red-500 hover:text-white"
-                                onClick={() => handleSendFeedback(false)}
-                                loading={feedbackLoading}
-                            >
-                                Reject & Send
-                            </Button>
-                            <Button
-                                color="green"
-                                variant="outline"
-                                className="rounded-full hover:bg-green-500 hover:text-white"
-                                onClick={() => handleSendFeedback(true)}
-                                loading={feedbackLoading}
-                            >
-                                Approve & Send
-                            </Button>
+
+                        <div>
+                            <span className="span-label-style">Notes from requester</span>
+                            <div
+                                className="tiptap mt-1.5 text-sm text-gray-700 max-h-48 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                dangerouslySetInnerHTML={{
+                                    __html:
+                                        active.notes ||
+                                        '<p class="text-gray-400">No notes provided.</p>',
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="span-label-style flex items-center gap-1.5">
+                                <LuMessageSquare size={11} />
+                                Your feedback (optional)
+                            </label>
+                            <div className="mt-1.5">
+                                <RichTextEditor
+                                    value={feedback}
+                                    onChange={setFeedback}
+                                    minHeight="100px"
+                                    maxHeight="200px"
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1.5">
+                                Feedback is shared with the requester on accept or reject.
+                            </p>
                         </div>
                     </div>
                 )}
-            </Modal>
+            </Drawer>
 
-            {/* Notes Modal */}
-            <Modal
-                opened={notesModalOpened}
-                onClose={() => setNotesModalOpened(false)}
-                title="Notes"
-                centered
-                size="md"
-                overlayProps={{ blur: 4 }}
-            >
-                <div
-                    style={{
-                        wordBreak: "break-word",
-                        fontSize: "14px",
-                        color: "#444"
-                    }}
-                    dangerouslySetInnerHTML={{ __html: notesModalContent }}
+            {alert && (
+                <NotificationAlert
+                    type={alert.type}
+                    message={alert.message}
+                    onClose={() => setAlert(null)}
                 />
-            </Modal>
-        </>
+            )}
+        </div>
     );
 };
 

@@ -1,233 +1,200 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { MantineReactTable, useMantineReactTable } from 'mantine-react-table';
-import { Modal } from '@mantine/core';
+import { LuFolderKanban } from 'react-icons/lu';
 import { formatDate } from '@src/utils/dateFormatter';
+import StatusPill from '../ui/StatusPill';
+import { toneFor } from '../ui/statusTone';
+import Card from '../ui/Card';
+import Avatar from '../ui/Avatar';
+import Drawer from '../ui/Drawer';
+import EmptyState from '../ui/EmptyState';
+import Toolbar from '../ui/Toolbar';
+import Spinner from '../ui/Spinner';
 
-// const baseURL = 'http://localhost:3000';
-
-// Status colors with badge styling
-const statusColors = {
-    active: { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' },        // Blue
-    inactive: { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },      // Red
-    in_progress: { bg: '#fef3c7', text: '#92400e', border: '#fcd34d' },   // Amber
-    planning: { bg: '#cffafe', text: '#155e75', border: '#67e8f9' },      // Cyan
-    completed: { bg: '#d1fae5', text: '#065f46', border: '#6ee7b7' },     // Green
+const statusLabel = (status) => {
+    if (!status) return '—';
+    const s = String(status).toLowerCase().replace('_', ' ');
+    return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-const statusLabels = {
-    active: 'Active',
-    inactive: 'Inactive',
-    in_progress: 'In Progress',
-    planning: 'Planning',
-    completed: 'Completed',
+const stripHtml = (html) => {
+    if (!html) return '';
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '').trim();
 };
 
 const ProjectListTable = ({ api }) => {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [rowSelection, setRowSelection] = useState({});
-    const [modalOpened, setModalOpened] = useState(false);
-    const [selectedProject, setSelectedProject] = useState(null);
+    const [search, setSearch] = useState('');
+    const [selected, setSelected] = useState(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         fetch(api, {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
         })
-            .then(res => res.json())
-            .then(data => {
+            .then((r) => r.json())
+            .then((data) => {
                 setProjects(Array.isArray(data) ? data : []);
                 setLoading(false);
-            });
+            })
+            .catch(() => setLoading(false));
     }, [api]);
 
-    const columns = useMemo(
-        () => [
-            {
-                accessorKey: 'name',
-                header: 'Project Name',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ row }) => (
-                    <span
-                        className="text-xs"
-                        style={{
-                            color: '#2563eb',
-                            cursor: 'pointer',
-                            fontWeight: 500,
-                            transition: 'color 0.2s',
-                        }}
-                        onClick={() => {
-                            setSelectedProject(row.original);
-                            setModalOpened(true);
-                        }}
-                    >
-                        {row.original.name}
-                    </span>
-                ),
-            },
-            {
-                accessorKey: 'status',
-                header: 'Status',
-                mantineTableHeadCellProps: { sx: { color: '#2563eb' } },
-                Cell: ({ cell }) => {
-                    const value = cell.getValue()?.toLowerCase();
-                    const colors = statusColors[value] || { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' };
-                    const label = statusLabels[value] || cell.getValue();
-                    return (
-                        <span
-                            className="text-xs px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5"
-                            style={{
-                                backgroundColor: colors.bg,
-                                color: colors.text,
-                                border: `1px solid ${colors.border}`,
-                            }}
-                        >
-                            <span
-                                style={{
-                                    width: '6px',
-                                    height: '6px',
-                                    borderRadius: '50%',
-                                    backgroundColor: colors.text,
-                                }}
-                            />
-                            {label}
-                        </span>
-                    );
-                },
-            },
-        ],
-        []
-    );
-
-    const table = useMantineReactTable({
-        columns,
-        data: projects,
-        enableColumnOrdering: true,
-        enableRowSelection: true,
-        enablePagination: true,
-        onRowSelectionChange: setRowSelection,
-        state: { rowSelection },
-        mantineTableProps: {
-            striped: true,
-            highlightOnHover: true,
-            withColumnBorders: true,
-            style: { background: '#f8fafc', borderRadius: '8px' },
-        },
-        mantineTableBodyRowProps: ({ row }) => ({
-            style: {
-                background: '#f8fafc',
-            },
-        }),
-        mantineTableBodyCellProps: {
-            sx: { background: 'inherit' },
-        },
-        mantineTableHeadCellProps: {
-            sx: {
-                background: '#e0e7ef',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-            },
-        },
-        mantineTableContainerProps: {
-            sx: { background: '#f8fafc', borderRadius: '8px', padding: '1rem' },
-        },
-    });
+    const filtered = useMemo(() => {
+        if (!search.trim()) return projects;
+        const q = search.toLowerCase();
+        return projects.filter(
+            (p) =>
+                p.name?.toLowerCase().includes(q) ||
+                stripHtml(p.description).toLowerCase().includes(q) ||
+                `${p.manager_first_name} ${p.manager_last_name}`.toLowerCase().includes(q)
+        );
+    }, [projects, search]);
 
     if (loading) {
         return (
-            <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
-                Loading...
-            </div>
-        );
-    }
-
-    if (!projects.length) {
-        return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#e53e3e', background: '#f8fafc', borderRadius: '8px' }}>
-                No projects found or unauthorized.
+            <div className="flex items-center justify-center py-20 text-gray-500 gap-2">
+                <Spinner size={16} />
+                <span className="text-sm">Loading projects…</span>
             </div>
         );
     }
 
     return (
-        <>
-            <MantineReactTable table={table} />
-            <Modal
-                opened={modalOpened}
-                onClose={() => setModalOpened(false)}
-                title={
-                    <div className="text-lg font-bold text-blue-400 flex items-center gap-2">
-                        <span className='text-stone-700 text-2xl'>Project Details</span>
-                    </div>
-                }
-                centered
-                size="lg"
-                overlayProps={{ blur: 4 }}
+        <div>
+            <div className="sticky top-0 z-[5] bg-white -mx-8 px-8 -mt-6 pt-6 pb-3 mb-4 border-b border-gray-100">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 tracking-tight">
+                    List All Projects
+                </h2>
+                <Toolbar
+                    search={search}
+                    onSearchChange={setSearch}
+                    searchPlaceholder="Search projects…"
+                    right={
+                        <span className="text-xs text-gray-500 tabular-nums">
+                            {filtered.length} {filtered.length === 1 ? 'project' : 'projects'}
+                        </span>
+                    }
+                />
+            </div>
+
+            {filtered.length === 0 ? (
+                <EmptyState
+                    icon={LuFolderKanban}
+                    title={projects.length === 0 ? 'No projects yet' : 'No matches'}
+                    description={
+                        projects.length === 0
+                            ? 'Create your first project from the Create tab.'
+                            : 'Try a different search term.'
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filtered.map((p) => (
+                        <Card key={p.project_id} onClick={() => setSelected(p)}>
+                            <div className="mb-3">
+                                <StatusPill tone={toneFor(p.status)}>
+                                    {statusLabel(p.status)}
+                                </StatusPill>
+                            </div>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">
+                                {p.name}
+                            </h3>
+                            <p className="text-xs text-gray-500 mb-4 min-h-[2rem] line-clamp-2">
+                                {stripHtml(p.description) || 'No description.'}
+                            </p>
+                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <Avatar
+                                        firstName={p.manager_first_name}
+                                        lastName={p.manager_last_name}
+                                        size="xs"
+                                    />
+                                    <span className="text-xs text-gray-600 truncate">
+                                        {p.manager_first_name} {p.manager_last_name}
+                                    </span>
+                                </div>
+                                <span className="text-[11px] text-gray-500 flex-shrink-0 tabular-nums">
+                                    Due {formatDate(p.due_date)}
+                                </span>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            )}
+
+            <Drawer
+                open={!!selected}
+                onClose={() => setSelected(null)}
+                title={selected?.name}
+                subtitle="Project details"
+                width="lg"
             >
-                {selectedProject && (
-                    <div className="p-4 bg-white rounded-lg shadow space-y-6">
-                        {/* Project Name */}
-                        <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Project Name</span>
-                            <span className="text-lg font-bold text-blue-400">{selectedProject.name}</span>
+                {selected && (
+                    <div className="space-y-5">
+                        <div>
+                            <span className="span-label-style">Status</span>
+                            <div className="mt-1.5">
+                                <StatusPill tone={toneFor(selected.status)}>
+                                    {statusLabel(selected.status)}
+                                </StatusPill>
+                            </div>
                         </div>
-                        {/* Description */}
-                        <div className="sidebar-scroll flex flex-col h-96 overflow-y-auto">
-                            <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Description</span>
+
+                        <div>
+                            <span className="span-label-style">Description</span>
                             <div
-                                className="tiptap border border-gray-200 rounded p-3 bg-gray-50 text-gray-700"
-                                dangerouslySetInnerHTML={{ __html: selectedProject.description }}
+                                className="tiptap mt-1.5 text-sm text-gray-700 max-h-72 overflow-y-auto sidebar-scroll border border-gray-200 rounded-md p-3 bg-gray-50"
+                                dangerouslySetInnerHTML={{
+                                    __html:
+                                        selected.description ||
+                                        '<p class="text-gray-400">No description.</p>',
+                                }}
                             />
                         </div>
-                        {/* Manager and Status */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Manager</span>
-                                <span className="text-base text-gray-700">
-                                    {selectedProject.manager_first_name} {selectedProject.manager_last_name}
-                                </span>
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Status</span>
-                                <span
-                                    className="text-sm px-3 py-1.5 rounded-full font-semibold inline-flex items-center gap-1.5 w-fit"
-                                    style={{
-                                        backgroundColor: statusColors[selectedProject.status?.toLowerCase()]?.bg || '#f3f4f6',
-                                        color: statusColors[selectedProject.status?.toLowerCase()]?.text || '#6b7280',
-                                        border: `1px solid ${statusColors[selectedProject.status?.toLowerCase()]?.border || '#d1d5db'}`,
-                                    }}
-                                >
-                                    <span
-                                        style={{
-                                            width: '6px',
-                                            height: '6px',
-                                            borderRadius: '50%',
-                                            backgroundColor: statusColors[selectedProject.status?.toLowerCase()]?.text || '#6b7280',
-                                        }}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <span className="span-label-style">Manager</span>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                    <Avatar
+                                        firstName={selected.manager_first_name}
+                                        lastName={selected.manager_last_name}
+                                        size="xs"
                                     />
-                                    {statusLabels[selectedProject.status?.toLowerCase()] || selectedProject.status}
-                                </span>
+                                    <span className="text-sm text-gray-900 truncate">
+                                        {selected.manager_first_name} {selected.manager_last_name}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                        {/* Dates */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Start Date</span>
-                                <span className="text-base text-gray-700">{formatDate(selectedProject.start_date)}</span>
+                            <div>
+                                <span className="span-label-style">Project ID</span>
+                                <code className="mt-1.5 block text-[11px] text-gray-500 font-mono truncate">
+                                    {selected.project_id}
+                                </code>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-400 uppercase mb-1">Due Date</span>
-                                <span className="text-base text-gray-700">{formatDate(selectedProject.due_date)}</span>
+                            <div>
+                                <span className="span-label-style">Start Date</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDate(selected.start_date)}
+                                </div>
+                            </div>
+                            <div>
+                                <span className="span-label-style">Due Date</span>
+                                <div className="mt-1.5 text-sm text-gray-900 tabular-nums">
+                                    {formatDate(selected.due_date)}
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
-            </Modal>
-        </>
+            </Drawer>
+        </div>
     );
 };
 

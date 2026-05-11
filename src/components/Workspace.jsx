@@ -54,7 +54,6 @@ const Workspace = ({ activeTab, roleId }) => {
     }
 
     const apiEndpoint = topTabs.find(t => t.value === activeTopTab)?.api;
-    const activeTabLabel = topTabs.find(t => t.value === activeTopTab)?.label;
 
     const renderUserTabContent = () => {
         switch (activeTopTab) {
@@ -151,11 +150,6 @@ const Workspace = ({ activeTab, roleId }) => {
 
             <div className="flex-1 min-h-0 overflow-y-auto sidebar-scroll">
                 <div className="px-8 py-6">
-                    {activeTabLabel && (
-                        <h2 className="text-base font-semibold text-gray-900 mb-5 tracking-tight">
-                            {activeTabLabel}
-                        </h2>
-                    )}
                     {activeTab === "users" && renderUserTabContent()}
                     {activeTab === "projects" && renderProjectTabContent()}
                     {activeTab === "tasks" && renderTaskTabContent()}

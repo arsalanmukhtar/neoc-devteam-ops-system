@@ -1,365 +1,223 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Select } from '@mantine/core';
-import { DateTimePicker } from '@mantine/dates';
-import NotificationAlert from "../NotificationAlert";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Color from '@tiptap/extension-color';
-import { TextStyle } from '@tiptap/extension-text-style';
-import Highlight from '@tiptap/extension-highlight';
-import { PiHighlighterDuotone } from "react-icons/pi";
-import { IoMdClose } from "react-icons/io";
+import React, { useState, useEffect } from 'react';
+import { LuInfo } from 'react-icons/lu';
+import NotificationAlert from '../NotificationAlert';
+import Button from '../ui/Button';
+import Field, { Input, Select } from '../ui/Field';
+import RichTextEditor from '../ui/RichTextEditor';
 
-// const baseURL = 'http://localhost:3000';
-
-const priorityOptions = [
-    { value: "low", label: "Low" },
-    { value: "medium", label: "Medium" },
-    { value: "high", label: "High" },
+const PRIORITY_OPTIONS = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
 ];
 
+const emptyForm = {
+    task_id: '',
+    priority: '',
+    start_time: '',
+    end_time: '',
+    notes: '',
+};
+
 const TimeEntryCreateForm = ({ onCreated }) => {
-    const [form, setForm] = useState({
-        task_id: '',
-        priority: '',
-        start_time: '',
-        end_time: '',
-        notes: '',
-    });
+    const [form, setForm] = useState(emptyForm);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [roleId, setRoleId] = useState(null);
     const [userId, setUserId] = useState(null);
-    const colorInputRef = useRef();
 
-    // Get role_id and user_id from localStorage
     useEffect(() => {
-        setRoleId(Number(localStorage.getItem("role_id")));
-        setUserId(localStorage.getItem("user_id"));
+        setRoleId(Number(localStorage.getItem('role_id')));
+        setUserId(localStorage.getItem('user_id'));
     }, []);
 
-    // Fetch tasks for dropdown
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        let url = "/api/tasks/list";
+        const token = localStorage.getItem('token');
+        let url = '/api/tasks/list';
         if (roleId === 3 && userId) {
             url += `?assigned_to_id=${userId}`;
         }
         fetch(url, {
             headers: {
                 Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
         })
-            .then(res => res.json())
-            .then(data => setTasks(Array.isArray(data) ? data : []));
+            .then((r) => r.json())
+            .then((d) => setTasks(Array.isArray(d) ? d : []))
+            .catch(() => {});
     }, [roleId, userId]);
 
-    // Mantine TipTap Editor for notes
-    const editor = useEditor({
-        extensions: [
-            StarterKit,
-            Color,
-            TextStyle,
-            Highlight
-        ],
-        content: "",
-        onUpdate: ({ editor }) =>
-            setForm(f => ({ ...f, notes: editor.getHTML() })),
-    });
+    useEffect(() => {
+        if (success || error) {
+            const t = setTimeout(() => {
+                setSuccess('');
+                setError('');
+            }, 3000);
+            return () => clearTimeout(t);
+        }
+    }, [success, error]);
 
-    const handleChange = e => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+    const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
-    const handleSelectChange = (name, value) => {
-        setForm({ ...form, [name]: value });
-    };
-
-    const handleSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
         setSuccess('');
-        const token = localStorage.getItem("token");
-        
-        // Role 1 and 2 create directly, Role 3 goes through requests
+
+        if (form.start_time && form.end_time && form.start_time >= form.end_time) {
+            setError('End time must be after start time.');
+            setLoading(false);
+            return;
+        }
+
+        const token = localStorage.getItem('token');
         const endpoint = roleId === 3 ? '/api/requests/time-entry' : '/api/time/create';
-        
+
         try {
             const res = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     ...form,
-                    start_time: form.start_time instanceof Date ? form.start_time.toISOString() : form.start_time,
-                    end_time: form.end_time instanceof Date ? form.end_time.toISOString() : form.end_time,
-                })
+                    start_time: new Date(form.start_time).toISOString(),
+                    end_time: new Date(form.end_time).toISOString(),
+                }),
             });
             const data = await res.json();
             if (res.ok) {
-                setSuccess(roleId === 3 ? 'Time entry request submitted for approval!' : 'Time entry created successfully!');
-                setForm({
-                    task_id: '',
-                    priority: '',
-                    start_time: '',
-                    end_time: '',
-                    notes: '',
-                });
-                if (editor) editor.commands.setContent("");
+                setSuccess(
+                    roleId === 3
+                        ? 'Time entry request submitted for approval.'
+                        : 'Time entry created successfully.'
+                );
+                setForm(emptyForm);
                 if (onCreated) onCreated(data);
             } else {
-                setError(data.error || 'Submission failed');
+                setError(data.error || 'Submission failed.');
             }
         } catch {
-            setError('Network error');
+            setError('Network error.');
         }
         setLoading(false);
     };
 
-    useEffect(() => {
-        if (success || error) {
-            const timer = setTimeout(() => {
-                setSuccess('');
-                setError('');
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [success, error]);
-
     return (
-        <form className="w-full max-w-2xl mx-auto flex flex-col gap-6" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-4 w-full">
-                {/* Task dropdown full width */}
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="task_id" className="label-style">Task</label>
-                    <Select
-                        id="task_id"
-                        name="task_id"
-                        placeholder="Select Task"
-                        data={tasks.map(t => ({
-                            value: String(t.task_id),
-                            label: t.title || `Task #${t.task_id}`
-                        }))}
-                        radius="xl"
-                        size="md"
-                        value={form.task_id}
-                        onChange={value => handleSelectChange("task_id", value)}
-                        classNames={{
-                            input: 'input-border font-sans',
-                            dropdown: 'font-sans',
-                            item: 'font-sans'
-                        }}
+        <form
+            className="max-w-2xl mx-auto bg-white rounded-lg border border-gray-200 p-6 space-y-5"
+            onSubmit={handleSubmit}
+        >
+            <div>
+                <h2 className="text-base font-semibold text-gray-900 tracking-tight">
+                    {roleId === 3 ? 'Submit time entry' : 'Create time entry'}
+                </h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                    Log the hours you spent on a task.
+                </p>
+            </div>
+
+            {roleId === 3 && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-md bg-sky-50 border border-sky-200">
+                    <LuInfo size={15} className="text-sky-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-sky-900">
+                        Your entry will be sent to an Admin or Project Manager for approval
+                        before counting toward your logged hours.
+                    </p>
+                </div>
+            )}
+
+            <Field label="Task" id="task_id" required>
+                <Select
+                    id="task_id"
+                    value={form.task_id}
+                    onChange={(e) => setField('task_id', e.target.value)}
+                    required
+                >
+                    <option value="" disabled>
+                        Select a task
+                    </option>
+                    {tasks.map((t) => (
+                        <option key={t.task_id} value={t.task_id}>
+                            {t.title || `Task #${t.task_id}`}
+                        </option>
+                    ))}
+                </Select>
+            </Field>
+
+            <Field label="Priority" id="priority" required>
+                <Select
+                    id="priority"
+                    value={form.priority}
+                    onChange={(e) => setField('priority', e.target.value)}
+                    required
+                >
+                    <option value="" disabled>
+                        Select priority
+                    </option>
+                    {PRIORITY_OPTIONS.map((p) => (
+                        <option key={p.value} value={p.value}>
+                            {p.label}
+                        </option>
+                    ))}
+                </Select>
+            </Field>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Start time" id="start_time" required>
+                    <Input
+                        type="datetime-local"
+                        id="start_time"
+                        value={form.start_time}
+                        onChange={(e) => setField('start_time', e.target.value)}
                         required
                     />
-                </div>
-                {/* Priority dropdown full width */}
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="priority" className="label-style">Priority</label>
-                    <Select
-                        id="priority"
-                        name="priority"
-                        placeholder="Select Priority"
-                        data={priorityOptions}
-                        radius="xl"
-                        size="md"
-                        value={form.priority}
-                        onChange={value => handleSelectChange("priority", value)}
-                        classNames={{
-                            input: 'input-border font-sans',
-                            dropdown: 'font-sans',
-                            item: 'font-sans'
-                        }}
+                </Field>
+                <Field label="End time" id="end_time" required>
+                    <Input
+                        type="datetime-local"
+                        id="end_time"
+                        value={form.end_time}
+                        onChange={(e) => setField('end_time', e.target.value)}
                         required
                     />
-                </div>
-                {/* Start and End time side by side */}
-                <div className="grid grid-cols-2 gap-4 w-full">
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="start_time" className="label-style">Start Time</label>
-                        <DateTimePicker
-                            id="start_time"
-                            name="start_time"
-                            placeholder="Pick start date & time"
-                            value={form.start_time}
-                            onChange={value => setForm(f => ({ ...f, start_time: value }))}
-                            classNames={{
-                                input: 'input-border font-sans',
-                                dropdown: 'font-sans',
-                                item: 'font-sans'
-                            }}
-                            radius="xl"
-                            size="md"
-                            required
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="end_time" className="label-style">End Time</label>
-                        <DateTimePicker
-                            id="end_time"
-                            name="end_time"
-                            placeholder="Pick end date & time"
-                            value={form.end_time}
-                            onChange={value => setForm(f => ({ ...f, end_time: value }))}
-                            classNames={{
-                                input: 'input-border font-sans',
-                                dropdown: 'font-sans',
-                                item: 'font-sans'
-                            }}
-                            radius="xl"
-                            size="md"
-                            required
-                        />
-                    </div>
-                </div>
+                </Field>
             </div>
-            <div className="flex flex-col gap-2">
-                <label className="label-style">Notes</label>
-                {/* Toolbar */}
-                <div className="flex gap-3 border border-gray-300 rounded-t-lg p-2 bg-gray-50">
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleBold().run()} disabled={!editor}><b>B</b></button>
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleItalic().run()} disabled={!editor}><i>I</i></button>
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleUnderline().run()} disabled={!editor}><u>U</u></button>
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleBulletList().run()} disabled={!editor}>•</button>
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleOrderedList().run()} disabled={!editor}>1.</button>
-                    <button type="button" onClick={() => editor && editor.chain().focus().toggleBlockquote().run()} disabled={!editor}>❝</button>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().toggleHighlight().run()}
-                        disabled={!editor}
-                        title="Highlight"
-                        style={{
-                            background: editor && editor.isActive('highlight') ? '#ffe066' : 'transparent',
-                            borderRadius: '4px',
-                            padding: '4px',
-                            transition: 'background 0.2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        <PiHighlighterDuotone
-                            size={18}
-                            color={editor && editor.isActive('highlight') ? '#a16207' : '#555'}
-                            style={{ transition: 'color 0.2s' }}
-                        />
-                    </button>
-                    <div style={{ position: 'relative', display: 'inline-block', verticalAlign: 'middle' }}>
-                        <button
-                            type="button"
-                            onClick={() => colorInputRef.current && colorInputRef.current.click()}
-                            disabled={!editor}
-                            title="Pick Color"
-                            style={{ padding: 0, border: 'none', background: 'none', marginLeft: '4px', marginRight: '4px' }}
-                        >
-                            <span
-                                style={{
-                                    display: 'inline-block',
-                                    width: '20px',
-                                    height: '20px',
-                                    background: editor && editor.getAttributes('textStyle').color ? editor.getAttributes('textStyle').color : '#eee',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    verticalAlign: 'middle',
-                                    marginRight: '2px',
-                                    transition: 'background 0.2s'
-                                }}
-                            />
-                        </button>
-                        <input
-                            type="color"
-                            ref={colorInputRef}
-                            style={{
-                                display: 'block',
-                                position: 'absolute',
-                                left: 0,
-                                top: '100%',
-                                zIndex: 10,
-                                marginTop: '2x',
-                                border: 'none',
-                                background: 'transparent',
-                                padding: 0,
-                                width: '20px',
-                                height: '20px',
-                                cursor: 'pointer',
-                                opacity: 0
-                            }}
-                            onChange={e => {
-                                if (editor) {
-                                    editor.chain().focus().setColor(e.target.value).run();
-                                }
-                            }}
-                            tabIndex={-1}
-                        />
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => editor && editor.chain().focus().unsetColor().run()}
-                        disabled={!editor}
-                        title="Remove Color"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '2px',
-                            borderRadius: '4px',
-                            background: 'transparent',
-                            transition: 'background 0.2s'
-                        }}
-                    >
-                        <IoMdClose size={18} color="#555" />
-                    </button>
-                </div>
-                <div className="sidebar-scroll border border-gray-300 p-3 min-h-[100px] h-48 bg-white overflow-y-auto">
-                    <EditorContent editor={editor} className="tiptap" />
-                </div>
-            </div>
-            {/* MESSAGES */}
-            {error && (
-                <NotificationAlert
-                    type="error"
-                    message={error}
-                    onClose={() => setError("")}
+
+            <Field label="Notes">
+                <RichTextEditor
+                    value={form.notes}
+                    onChange={(html) => setField('notes', html)}
+                    minHeight="120px"
+                    maxHeight="240px"
                 />
+            </Field>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setForm(emptyForm)}
+                    disabled={loading}
+                >
+                    Clear
+                </Button>
+                <Button type="submit" loading={loading}>
+                    {roleId === 3 ? 'Submit for approval' : 'Add entry'}
+                </Button>
+            </div>
+
+            {error && (
+                <NotificationAlert type="error" message={error} onClose={() => setError('')} />
             )}
             {success && (
-                <NotificationAlert
-                    type="success"
-                    message={success}
-                    onClose={() => setSuccess("")}
-                />
+                <NotificationAlert type="success" message={success} onClose={() => setSuccess('')} />
             )}
-            <div className="flex justify-end gap-4">
-                <button
-                    type="button"
-                    className="mt-6 bg-red-400 text-white font-semibold py-2 px-8 rounded-full hover:bg-red-500 transition"
-                    onClick={() => {
-                        setForm({
-                            task_id: '',
-                            priority: '',
-                            start_time: '',
-                            end_time: '',
-                            notes: '',
-                        });
-                        if (editor) editor.commands.setContent("");
-                    }}
-                    disabled={loading}
-                >
-                    Clear Form
-                </button>
-                <button
-                    type="submit"
-                    className="mt-6 bg-green-500 text-white font-semibold py-2 px-8 rounded-full hover:bg-green-600 transition"
-                    disabled={loading}
-                >
-                    {loading ? "Adding Entry..." : "Add Entry"}
-                </button>
-            </div>
         </form>
     );
 };
